@@ -1,19 +1,14 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 import Directory from "./pages/Directory";
 import Profile from "./pages/Profile";
+import Attendance from "./pages/Attendance";
+import Leave from "./pages/Leave";
 import AppShell from "./components/layout/AppShell";
 
-// Temporary placeholder for dashboard content
-function DashboardMock() {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-      <p className="text-slate-500">Welcome to your HRMS Portal. UI/UX layout is successfully wired.</p>
-    </div>
-  );
-}
+// The DashboardMock was removed because we now have a real Dashboard component.
 
 function App() {
   return (
@@ -24,8 +19,10 @@ function App() {
         
         {/* Protected Routes Wrapper */}
         <Route element={<AppShell />}>
-          <Route path="/dashboard" element={<DashboardMock />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/directory" element={<Directory />} />
+          <Route path="/attendance" element={<Attendance />} />
+          <Route path="/leave" element={<Leave />} />
           <Route path="/profile" element={<Profile />} />
           {/* We will map /attendance, etc. here later */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

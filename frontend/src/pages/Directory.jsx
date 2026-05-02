@@ -1,9 +1,11 @@
 import React, { useState } from "react";
-import { Search, Plus, Filter, MoreHorizontal } from "lucide-react";
-import { Card } from "../components/ui/Card";
+import { Search, Plus, Filter, MoreHorizontal, LayoutGrid, List, Mail, Building2, Briefcase } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import { DataTable } from "../components/ui/DataTable";
+import { PageHeader } from "../components/ui/PageHeader";
 
 // Mock data reflecting the backend seed.py structure
 const MOCK_EMPLOYEES = [
@@ -16,95 +18,154 @@ const MOCK_EMPLOYEES = [
 
 export default function Directory() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState("grid"); // 'table' or 'grid'
 
   // Simple client-side search logic for the mock
   const filteredEmployees = MOCK_EMPLOYEES.filter(emp => 
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.department.toLowerCase().includes(searchTerm.toLowerCase())
+  emp.department.topLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const columns = [
+    { 
+      header: "Employee", 
+      accessor: "name", 
+      render: (row) => (
+        <div>
+          <div className="font-medium text-slate-900">{row.name}</div>
+          <div className="text-slate-500 text-xs mt-0.5">{row.email}</div>
+        </div>
+      ) 
+    },
+    { header: "Code", accessor: "code", cellClassName: "hidden sm:table-cell", headerClassName: "hidden sm:table-cell" },
+    { header: "Department", accessor: "department", cellClassName: "hidden md:table-cell", headerClassName: "hidden md:table-cell" },
+    { header: "Designation", accessor: "designation", cellClassName: "hidden lg:table-cell", headerClassName: "hidden lg:table-cell" },
+    { header: "Status", accessor: "status", render: (row) => <StatusBadge status={row.status === "active" ? "approved" : row.status === "inactive" ? "rejected" : row.status} /> },
+    { 
+      header: "", 
+      accessor: "actions", 
+      cellClassName: "text-right",
+      render: () => (
+        <button className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Employee Directory</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage and view all employee profiles.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Note: In a real app, only HR/Admin would see this button */}
+      <PageHeader 
+        title="Employee Directory" 
+        description="Manage and view all employee profiles."
+        actions={
           <Button className="gap-2">
             <Plus className="w-4 h-4" /> Add Employee
+          </Button>
+        }
+      />
+
+      <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-between sm:flex-row gap-4">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input 
+            type="text" 
+            placeholder="Search by name, code, or department..." 
+            className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+-        
+        <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+          <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
+              title="Grid View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${viewMode === 'table' ? 'bg-white shadow-sm text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
+              title="Table View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+          <Button variant="secondary" className="gap-2 shrink-0">
+            <Filter className="w-4 h-4" /> <span className="hidden sm:inline">Filters</span>
           </Button>
         </div>
       </div>
 
-      <Card className="overflow-hidden">
-        {/* Toolbar */}
-        <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row gap-3 justify-between items-center">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search by name, code, or department..." 
-              className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button variant="secondary" className="w-full sm:w-auto gap-2">
-            <Filter className="w-4 h-4" /> Filters
-          </Button>
-        </div>
+      {viewMode === "table" ? (
+        <Card className="overflow-hidden">
+          <DataTable 
+            columns={columns} 
+            data=+{filteredEmployees} 
+            emptyMessage={`No employees found matching "${searchTerm}".`} 
+          />
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredEmployees.length > 0 ? (
+            filteredEmployees.map((emp) => (
+              <Card key={emp.id} className="flex flex-col hover:border-primary-200 transition-colors group">
+                <div className="p-6 border-b border-slate-100 flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center font-bold text-lg border border-primary-100 group-hover:bg-primary-600 group-hover:text-white transition-colors">
+                      {emp.name.split(' ').map(n > n[0]).join('')}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900 text-lg leading-tight">{emp.name}</h3>
+                      <p className="text-sm text-slate-500 font-medium">{emp.designation}</p>
+                    </div>
+                  </div>
+                  <button className="text-slate-400 hover:text-primary-600 transition-colors">
+                    <MoreHorizontal className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="p-6 space-y-4 flex-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500">Status</span>
+                    <StatusBadge status={emp.status === "active" ? "approved" : emp.status === "inactive" ? "rejected" : emp.status} />
+                  </div>
+                  
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center text-sm text-slate-600">
+                      <Briefcase className="w-4 h-4 mr-3 text-slate-400" />
+                      {emp.code}
+                    </div>
+                    <div className="flex items-center text-sm text-slate-600">
+                      <Building2 className="w-4 h-4 mr-3 text-slate-400" />
+                      {emp.department}
+                    </div>
+                    <div className="flex items-center text-sm text-slate-600">
+                      <Mail className="w-4 h-4 mr-3 text-slate-400" />
+                      <span className="truncate">{emp.email}</span>
+                    </div>
+                  </div>
+                </div>
 
-        {/* Data Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-4">Employee</th>
-                <th className="px-6 py-4 hidden sm:table-cell">Code</th>
-                <th className="px-6 py-4 hidden md:table-cell">Department</th>
-                <th className="px-6 py-4 hidden lg:table-cell">Designation</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
-              {filteredEmployees.length > 0 ? (
-                filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-slate-900">{emp.name}</div>
-                      <div className="text-slate-500 text-xs mt-0.5">{emp.email}</div>
-                    </td>
-                    <td className="px-6 py-4 hidden sm:table-cell text-slate-600">{emp.code}</td>
-                    <td className="px-6 py-4 hidden md:table-cell text-slate-600">{emp.department}</td>
-                    <td className="px-6 py-4 hidden lg:table-cell text-slate-600">{emp.designation}</td>
-                    <td className="px-6 py-4">
-                      <StatusBadge 
-                        status={emp.status === "active" ? "approved" : emp.status === "inactive" ? "rejected" : emp.status} 
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
-                    No employees found matching "{searchTerm}".
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 mt-auto">
+                  <Button variant="ghost" className="w-full text-primary-600 hover:text-primary-700 hover:bg-primary-50 font-medium">
+                    View Profile
+                  </Button>
+                </div>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full py-16 flex flex-col items-center justify-center text-center bg-white border border-slate-200 rounded-xl">
+              <Search className="w-8 h-8 text-slate-300 mb-3" />
+              <p lassName="text-slate-500">No employees found matching "${searchTerm}".</p>
+            </div>
+          )}
         </div>
-      </Card>
+      )}
     </div>
   );
 }
