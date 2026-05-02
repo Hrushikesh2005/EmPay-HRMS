@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from jose import jwt
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.db.session import get_db, SessionLocal
 from app.models.user import User
 
 router = APIRouter(prefix="/realtime", tags=["Realtime"])
@@ -69,7 +69,7 @@ def _validate_token_get_user(token: str, db: Session) -> User:
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, token: str = Query(None)):
     # token passed as query param: ?token=Bearer%20...
-    from app.core.database import SessionLocal
+    from app.db.session import SessionLocal
 
     raw_token = token or ""
     if raw_token.startswith("Bearer "):

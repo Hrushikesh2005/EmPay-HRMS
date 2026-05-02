@@ -3,7 +3,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.base import new_uuid
 from app.models.employee import EmployeeProfile
-from app.models.leave import LeaveRequest, LeaveType
+from app.models.leave_request import LeaveRequest
+from app.models.leave_type import LeaveType
 from app.models.enums import LeaveRequestStatus
 from app.models.user import User
 

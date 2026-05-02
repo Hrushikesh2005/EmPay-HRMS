@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.core.dependencies import require_roles
+from app.db.session import get_db
+from app.dependencies.auth import require_roles
 from app.schemas.leave import LeaveApplyRequest, LeaveRequestOut
 from app.services.leave_service import apply_leave, list_my_leaves, list_all_leaves
 from app.models.user import User
 
-router = APIRouter(prefix="/leave-requests", tags=["Leave"])
+router = APIRouter(prefix="/leave-requests-legacy", tags=["Leave (Legacy)"])
 
 
 @router.post("", response_model=LeaveRequestOut)

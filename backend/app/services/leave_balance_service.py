@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import AppException
 from app.models.base import new_uuid
-from app.models.leave import LeaveBalance, LeaveType
+from app.models.leave_balance import LeaveBalance
+from app.models.leave_type import LeaveType
 from app.schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceUpdate
 
 
