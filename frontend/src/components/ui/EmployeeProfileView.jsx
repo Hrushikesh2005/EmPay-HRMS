@@ -15,8 +15,11 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
-import { fetchEmployeeSalary } from "../../services/employees";
+import { fetchEmployeeSalary, allocateInitialLeaves } from "../../services/employees";
 import useAuth from "../../hooks/useAuth";
+import toast from "react-hot-toast";
+import { Modal } from "./Modal";
+import { SalaryConfigForm } from "./SalaryConfigForm";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -221,7 +224,7 @@ function PrivateInfoTab({ emp }) {
 
 // ─── Tab: Salary Info ─────────────────────────────────────────────────────────
 
-function SalaryInfoTab({ employeeId }) {
+function SalaryInfoTab({ employeeId, canConfigure }) {
   const [salary, setSalary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -232,7 +235,7 @@ function SalaryInfoTab({ employeeId }) {
     fetchEmployeeSalary(employeeId)
       .then(setSalary)
       .catch((e) =>
-        setError(e?.response?.data?.detail || "No salary structure found.")
+        setError(e?.response?.data?.detail || "No active salary structure found.")
       )
       .finally(() => setLoading(false));
   }, [employeeId]);
@@ -245,101 +248,120 @@ function SalaryInfoTab({ employeeId }) {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-6 text-sm text-slate-500 max-w-lg">
-        <AlertCircle className="w-5 h-5 text-slate-400 shrink-0" />
-        {error}
-      </div>
-    );
-  }
-
-  const gross =
-    parseFloat(salary.basic_salary || 0) +
-    parseFloat(salary.hra || 0) +
-    parseFloat(salary.other_allowances || 0);
+  const gross = salary ? parseFloat(salary.basic_salary || 0) + parseFloat(salary.hra || 0) + parseFloat(salary.other_allowances || 0) : 0;
 
   return (
-    <div className="max-w-2xl space-y-6">
-      {/* Earnings table */}
-      <div>
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-          Earnings
-        </p>
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-          {[
-            { label: "Basic Salary", value: formatINR(salary.basic_salary) },
-            {
-              label: "House Rent Allowance (HRA)",
-              value: formatINR(salary.hra),
-            },
-            {
-              label: "Other Allowances",
-              value: formatINR(salary.other_allowances),
-            },
-          ].map((r, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-6 py-3.5 border-b border-slate-100 last:border-0"
-            >
-              <span className="text-sm text-slate-600">{r.label}</span>
-              <span className="text-sm font-semibold text-slate-800">
-                {r.value}
-              </span>
-            </div>
-          ))}
-          {/* Gross total row */}
-          <div className="flex items-center justify-between px-6 py-4 bg-emerald-50 border-t border-emerald-100">
-            <span className="text-sm font-bold text-emerald-800">
-              Gross Salary (CTC)
-            </span>
-            <span className="text-sm font-bold text-emerald-700">
-              {formatINR(gross)}
-            </span>
+    <div className="max-w-4xl grid grid-cols-1 xl:grid-cols-2 gap-8">
+      {/* Left Column: View Salary Details */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-semibold text-slate-800 border-b border-slate-100 pb-2">Active Salary Structure</h3>
+        
+        {error ? (
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-6 text-sm text-slate-500">
+            <AlertCircle className="w-5 h-5 text-slate-400 shrink-0" />
+            {error}
           </div>
-        </div>
-      </div>
-
-      {/* Deductions table */}
-      <div>
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-          Deductions
-        </p>
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-          {[
-            {
-              label: "PF — Employee Contribution",
-              value: `${salary.pf_employee_pct}%`,
-            },
-            {
-              label: "PF — Employer Contribution",
-              value: `${salary.pf_employer_pct}%`,
-            },
-            {
-              label: "Professional Tax",
-              value: formatINR(salary.professional_tax),
-            },
-          ].map((r, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-6 py-3.5 border-b border-slate-100 last:border-0"
-            >
-              <span className="text-sm text-slate-600">{r.label}</span>
-              <span className="text-sm font-semibold text-red-600">
-                {r.value}
-              </span>
+        ) : (
+          <>
+            {/* Earnings table */}
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                Earnings
+              </p>
+              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                {[
+                  { label: "Basic Salary", value: formatINR(salary.basic_salary) },
+                  {
+                    label: "House Rent Allowance (HRA)",
+                    value: formatINR(salary.hra),
+                  },
+                  {
+                    label: "Other Allowances",
+                    value: formatINR(salary.other_allowances),
+                  },
+                ].map((r, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between px-6 py-3.5 border-b border-slate-100 last:border-0"
+                  >
+                    <span className="text-sm text-slate-600">{r.label}</span>
+                    <span className="text-sm font-semibold text-slate-800">
+                      {r.value}
+                    </span>
+                  </div>
+                ))}
+                {/* Gross total row */}
+                <div className="flex items-center justify-between px-6 py-4 bg-emerald-50 border-t border-emerald-100">
+                  <span className="text-sm font-bold text-emerald-800">
+                    Gross Salary (CTC)
+                  </span>
+                  <span className="text-sm font-bold text-emerald-700">
+                    {formatINR(gross)}
+                  </span>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
+
+            {/* Deductions table */}
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                Deductions
+              </p>
+              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                {[
+                  {
+                    label: "PF — Employee Contribution",
+                    value: `${salary.pf_employee_pct}%`,
+                  },
+                  {
+                    label: "PF — Employer Contribution",
+                    value: `${salary.pf_employer_pct}%`,
+                  },
+                  {
+                    label: "Professional Tax",
+                    value: formatINR(salary.professional_tax),
+                  },
+                ].map((r, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between px-6 py-3.5 border-b border-slate-100 last:border-0"
+                  >
+                    <span className="text-sm text-slate-600">{r.label}</span>
+                    <span className="text-sm font-semibold text-red-600">
+                      {r.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Effective period */}
+            <p className="text-xs text-slate-400">
+              Effective from {formatDate(salary.effective_from)}
+              {salary.effective_to
+                ? ` to ${formatDate(salary.effective_to)}`
+                : " (Current)"}
+            </p>
+          </>
+        )}
       </div>
 
-      {/* Effective period */}
-      <p className="text-xs text-slate-400">
-        Effective from {formatDate(salary.effective_from)}
-        {salary.effective_to
-          ? ` to ${formatDate(salary.effective_to)}`
-          : " (Current)"}
-      </p>
+      {/* Right Column: Configuration Form (Only if authorized) */}
+      {canConfigure && (
+        <div>
+          <SalaryConfigForm 
+            employeeId={employeeId} 
+            onSuccess={() => {
+              // Reload salary info after a successful configuration
+              setLoading(true);
+              fetchEmployeeSalary(employeeId)
+                .then(setSalary)
+                .catch((e) => setError(e?.response?.data?.detail || "No active salary structure found."))
+                .finally(() => setLoading(false));
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -358,27 +380,46 @@ export function EmployeeProfileView({ employee: emp, onBack }) {
 
   const visibleTabs = TABS.filter((t) => !t.privileged || canSeeSalary);
   const [activeTab, setActiveTab] = useState("resume");
+  const [isAllocating, setIsAllocating] = useState(false);
+  const [showAllocateConfirm, setShowAllocateConfirm] = useState(false);
 
   // Reset tab whenever a different employee is opened
   useEffect(() => {
     setActiveTab("resume");
   }, [emp?.id]);
 
+  const handleAllocateLeaves = async () => {
+    setIsAllocating(true);
+    try {
+      await allocateInitialLeaves(emp.id);
+      toast.success("Initial leave balances allocated successfully");
+      setShowAllocateConfirm(false);
+      window.location.reload();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to allocate leaves");
+    } finally {
+      setIsAllocating(false);
+    }
+  };
+
   if (!emp) return null;
 
   const name = emp.user?.full_name || "Unknown";
   const color = getAvatarColor(name);
+  const canManageLeaves = role === "admin" || role === "hr_officer";
 
   return (
     <div className="space-y-6">
-      {/* ── Back navigation ── */}
-      <button
-        onClick={onBack}
-        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary-600 transition-colors group"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-        Back to Directory
-      </button>
+      {/* ── Top Actions ── */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-primary-600 transition-colors group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          Back to Directory
+        </button>
+      </div>
 
       {/* ── Profile Header Card ── */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -403,7 +444,17 @@ export function EmployeeProfileView({ employee: emp, onBack }) {
                 <h1 className="text-2xl font-bold text-slate-900 mb-3 truncate">
                   {name}
                 </h1>
-                <div className="space-y-0">
+                
+                {canManageLeaves && (
+                  <button 
+                    className="mt-4 w-full px-4 py-2 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-lg"
+                    onClick={() => setShowAllocateConfirm(true)}
+                  >
+                    Allocate Initial Leaves
+                  </button>
+                )}
+
+                <div className="space-y-0 mt-4">
                   <IdentityField
                     label="Login ID"
                     value={emp.id?.slice(0, 8).toUpperCase()}
@@ -462,9 +513,42 @@ export function EmployeeProfileView({ employee: emp, onBack }) {
         {activeTab === "resume" && <ResumeTab emp={emp} />}
         {activeTab === "private" && <PrivateInfoTab emp={emp} />}
         {activeTab === "salary" && canSeeSalary && (
-          <SalaryInfoTab employeeId={emp.id} />
+          <SalaryInfoTab employeeId={emp.id} canConfigure={canSeeSalary} />
         )}
       </div>
+
+      {/* Allocation Modal */}
+      <Modal
+        isOpen={showAllocateConfirm}
+        onClose={() => !isAllocating && setShowAllocateConfirm(false)}
+        title="Allocate Initial Leaves"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Are you sure you want to allocate the standard initial leave balances for this employee? 
+            This action will inject the predefined company default leaves (e.g., 12 Paid, 12 Sick).
+          </p>
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              onClick={() => setShowAllocateConfirm(false)}
+              disabled={isAllocating}
+              className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAllocateLeaves}
+              disabled={isAllocating}
+              className="px-4 py-2 text-sm font-medium text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors inline-flex items-center gap-2 disabled:opacity-50"
+            >
+              {isAllocating && (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
+              Confirm Allocation
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

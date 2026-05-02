@@ -10,6 +10,7 @@ class LeaveBalance(Base):
 	__tablename__ = "leave_balances"
 	__table_args__ = (
 		UniqueConstraint("employee_id", "leave_type_id", "year", name="uq_balance_employee_type_year"),
+		{"extend_existing": True},
 	)
 
 	id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)

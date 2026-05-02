@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 from app.models.enums import UserRole
 
@@ -6,7 +6,7 @@ from app.models.enums import UserRole
 class UserAdminOut(BaseModel):
 	id: str
 	full_name: str
-	email: EmailStr
+	email: str
 	role: UserRole
 	is_active: bool
 

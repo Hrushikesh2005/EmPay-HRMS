@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.dependencies import require_permission, get_current_user
-from app.schemas.employee import EmployeeProfileCreate, EmployeeProfileOut, EmployeeProfileUpdate, SalaryStructureOut
-from app.services.employee_service import list_employees, get_employee, update_employee, create_employee_profile, get_employee_salary
+from app.core.dependencies import require_permission, get_current_user, require_roles
+from app.schemas.employee import EmployeeProfileCreate, EmployeeProfileOut, EmployeeProfileUpdate, SalaryStructureOut, SalaryStructureCreate
+from app.services.employee_service import list_employees, get_employee, update_employee, create_employee_profile, get_employee_salary, set_employee_salary
 from app.models.employee import EmployeeProfile
 from app.models.user import User
 
@@ -64,3 +64,12 @@ def get_salary(
 	current_user: User = Depends(require_permission("payroll", "view")),
 ):
 	return get_employee_salary(employee_id, db)
+
+@router.post("/{employee_id}/salary", response_model=SalaryStructureOut)
+def set_salary(
+	employee_id: str,
+	data: SalaryStructureCreate,
+	db: Session = Depends(get_db),
+	current_user: User = Depends(require_roles("admin", "payroll_officer")),
+):
+	return set_employee_salary(employee_id, data, db)

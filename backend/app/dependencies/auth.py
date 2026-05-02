@@ -53,6 +53,10 @@ def require_roles(*roles: UserRole):
     allowed = set(roles)
 
     def _checker(current_user: User = Depends(get_current_user)) -> User:
+        # SUPERUSER BYPASS: Admin inherits all role-based endpoint access
+        if current_user.role == UserRole.admin:
+            return current_user
+            
         if current_user.role not in allowed:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return current_user

@@ -5,6 +5,7 @@ from app.models.enums import UserRole
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)

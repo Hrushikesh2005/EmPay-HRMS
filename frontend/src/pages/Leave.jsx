@@ -918,7 +918,7 @@ export default function Leave() {
   const [activeTab, setActiveTab] = useState("personal");
 
   if (!role || role === "employee") return <EmployeeLeaveView />;
-  if (role === "admin") return <AdminLeaveView />;
+  if (role === "admin" || role === "payroll_officer") return <AdminLeaveView />;
 
   return (
     <div className="space-y-6">

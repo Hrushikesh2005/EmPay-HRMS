@@ -5,6 +5,7 @@ from app.models.base import Base, TimestampMixin, new_uuid
 
 class SalaryStructure(Base, TimestampMixin):
     __tablename__ = "salary_structures"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     employee_id: Mapped[str] = mapped_column(String(36), ForeignKey("employee_profiles.id", ondelete="CASCADE"), nullable=False)

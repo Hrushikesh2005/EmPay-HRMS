@@ -7,6 +7,7 @@ from app.models.base import Base, TimestampMixin, new_uuid
 
 class LeaveType(Base, TimestampMixin):
 	__tablename__ = "leave_types"
+	__table_args__ = {"extend_existing": True}
 
 	id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
 	name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)

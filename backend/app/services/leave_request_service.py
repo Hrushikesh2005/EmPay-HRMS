@@ -54,8 +54,9 @@ def create_leave_request(db: Session, employee_id: str, data: LeaveRequestCreate
     balance = _get_leave_balance(db, employee_id, data.leave_type_id, current_year)
     total_days = calculate_working_days(data.start_date, data.end_date)
 
-    if not balance or balance.remaining_days < total_days:
-        raise AppException(400, "Insufficient leave balance")
+    if leave_type.is_paid:
+        if not balance or balance.remaining_days < total_days:
+            raise AppException(400, "Insufficient leave balance")
 
     overlap_stmt = select(LeaveRequest).where(
         LeaveRequest.employee_id == employee_id,
@@ -63,7 +64,7 @@ def create_leave_request(db: Session, employee_id: str, data: LeaveRequestCreate
         LeaveRequest.start_date <= data.end_date,
         LeaveRequest.end_date >= data.start_date,
     )
-    overlapping_request = db.execute(overlap_stmt).scalar_one_or_none()
+    overlapping_request = db.execute(overlap_stmt).scalars().first()
     if overlapping_request:
         raise AppException(409, "An overlapping leave request already exists")
 
@@ -93,15 +94,6 @@ def list_leave_requests_for_employee(
         stmt = stmt.where(LeaveRequest.status == status_filter)
     stmt = stmt.order_by(LeaveRequest.created_at.desc())
     return db.execute(stmt).scalars().unique().all()
-
-
-# Public alias used by the employee-facing router
-def get_my_leave_requests(
-    db: Session,
-    employee_id: str,
-    status_filter: str | None = None,
-) -> list[LeaveRequest]:
-    return list_leave_requests_for_employee(db, employee_id, status_filter)
 
 
 def cancel_leave_request(db: Session, request_id: str, employee_id: str) -> LeaveRequest:
@@ -156,16 +148,17 @@ def review_leave_request(
     review_status = LeaveRequestStatus(action)
 
     if review_status == LeaveRequestStatus.approved:
-        current_year = date.today().year
-        balance = _get_leave_balance(db, leave_request.employee_id, leave_request.leave_type_id, current_year)
-        if not balance:
-            raise AppException(400, "Leave balance not found")
+        if leave_request.leave_type.is_paid:
+            current_year = date.today().year
+            balance = _get_leave_balance(db, leave_request.employee_id, leave_request.leave_type_id, current_year)
+            if not balance:
+                raise AppException(400, "Leave balance not found")
 
-        new_used_days = Decimal(balance.used_days) + Decimal(leave_request.total_days)
-        if new_used_days > Decimal(balance.allocated_days):
-            raise AppException(400, "Approval would exceed allocated leave balance")
+            new_used_days = Decimal(balance.used_days) + Decimal(leave_request.total_days)
+            if new_used_days > Decimal(balance.allocated_days):
+                raise AppException(400, "Approval would exceed allocated leave balance")
 
-        balance.used_days = new_used_days
+            balance.used_days = new_used_days
 
     leave_request.status = review_status
     leave_request.reviewed_by = reviewer_user_id
@@ -175,3 +168,23 @@ def review_leave_request(
     db.commit()
     db.refresh(leave_request)
     return leave_request
+
+
+def get_my_leave_requests(
+    db: Session,
+    employee_id: str,
+    status_filter: str | None = None,
+) -> list[LeaveRequest]:
+    """Get leave requests for the current employee.
+
+    Alias for list_leave_requests_for_employee.
+
+    Args:
+        db: Database session
+        employee_id: Employee ID to fetch requests for
+        status_filter: Optional status filter
+
+    Returns:
+        List of LeaveRequest objects
+    """
+    return list_leave_requests_for_employee(db, employee_id, status_filter)

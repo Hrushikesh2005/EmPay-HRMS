@@ -11,14 +11,17 @@ import Profile from "./pages/Profile.jsx";
 import Attendance from "./pages/Attendance.jsx";
 import Leave from "./pages/Leave.jsx";
 import Payroll from "./pages/Payroll.jsx";
+import PayrollWizard from "./pages/PayrollWizard.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
 import ForcePasswordChange from "./pages/ForcePasswordChange.jsx";
+import { Toaster } from "react-hot-toast";
 
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
@@ -66,6 +69,7 @@ function App() {
           {/* Payroll */}
           <Route element={<RoleBasedRoute module="payroll" />}>
             <Route path="/payroll" element={<Payroll />} />
+            <Route path="/payroll-wizard" element={<PayrollWizard />} />
           </Route>
 
           {/* Reports */}

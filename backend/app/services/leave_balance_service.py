@@ -53,3 +53,41 @@ def get_balances_for_employee(db: Session, employee_id: str, year: int) -> list[
 		.order_by(LeaveType.name)
 	)
 	return db.execute(stmt).scalars().unique().all()
+
+
+def allocate_base_leaves(db: Session, employee_id: str) -> list[LeaveBalance]:
+	from datetime import date
+	current_year = date.today().year
+
+	# Check if any balances already exist for this employee for the current year
+	stmt = select(LeaveBalance).where(
+		LeaveBalance.employee_id == employee_id,
+		LeaveBalance.year == current_year
+	)
+	existing = db.execute(stmt).scalars().first()
+	if existing:
+		raise AppException(400, "Base leaves are already allocated for this employee.")
+
+	# Get all leave types
+	leave_types = db.execute(select(LeaveType)).scalars().all()
+	if not leave_types:
+		raise AppException(400, "No leave types found in the system to allocate.")
+
+	new_balances = []
+	for lt in leave_types:
+		balance = LeaveBalance(
+			id=new_uuid(),
+			employee_id=employee_id,
+			leave_type_id=lt.id,
+			year=current_year,
+			allocated_days=Decimal(str(lt.default_days_per_year)),
+			used_days=Decimal("0.0"),
+		)
+		db.add(balance)
+		new_balances.append(balance)
+
+	db.commit()
+	for b in new_balances:
+		db.refresh(b)
+	
+	return new_balances

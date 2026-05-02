@@ -17,7 +17,7 @@ class LeaveRequestCreate(BaseModel):
     @model_validator(mode="after")
     def validate_date_range(self):
         if self.end_date < self.start_date:
-            raise ValueError("End date must be on or after start date")
+            raise ValueError("end_date must be greater than or equal to start_date")
         return self
 
 
@@ -44,3 +44,19 @@ class LeaveRequestResponse(BaseModel):
 class LeaveReviewRequest(BaseModel):
     action: Literal["approved", "rejected"]
     review_remarks: str | None = None
+
+
+class LeaveQueueItem(BaseModel):
+    id: str
+    employee_id: str
+    employee_name: str
+    leave_type_name: str
+    leave_type_is_paid: bool
+    start_date: date
+    end_date: date
+    total_days: Decimal
+    reason: str | None
+    status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

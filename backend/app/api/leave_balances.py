@@ -8,7 +8,7 @@ from app.core.dependencies import get_current_user, require_roles
 from app.models.employee import EmployeeProfile
 from app.models.user import User
 from app.schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceResponse, LeaveBalanceUpdate
-from app.services.leave_balance_service import allocate_leave, get_balances_for_employee, update_allocation
+from app.services.leave_balance_service import allocate_leave, get_balances_for_employee, update_allocation, allocate_base_leaves
 
 router = APIRouter(prefix="/leave-balances", tags=["Leave Balances"])
 
@@ -53,3 +53,18 @@ def update_leave_allocation_route(
 	current_user: User = Depends(require_roles("hr_officer", "admin")),
 ) -> LeaveBalanceResponse:
 	return update_allocation(db, balance_id, data)
+
+
+@router.post("/allocate-initial/{employee_id}", status_code=status.HTTP_201_CREATED)
+def allocate_initial_leaves_route(
+    employee_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "hr_officer")),
+):
+    """Allocate initial default leave balances for a new employee.
+    
+    Checks if balances already exist. If none exist, injects standard
+    company defaults (e.g. 12 Paid, 12 Sick, 0 Unpaid).
+    Requires ADMIN or HR_OFFICER role.
+    """
+    return allocate_base_leaves(db, employee_id)

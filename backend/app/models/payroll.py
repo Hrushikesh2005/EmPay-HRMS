@@ -7,6 +7,7 @@ from app.models.enums import PayrunStatus, PayslipStatus
 
 class Payrun(Base, TimestampMixin):
     __tablename__ = "payruns"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     period_label: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -21,6 +22,7 @@ class Payrun(Base, TimestampMixin):
 
 class Payslip(Base):
     __tablename__ = "payslips"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     payrun_id: Mapped[str] = mapped_column(String(36), ForeignKey("payruns.id", ondelete="RESTRICT"), nullable=False)

@@ -19,12 +19,17 @@ from app.api.leave_requests import router as leave_requests_router
 from app.api.realtime import router as realtime_router
 from app.api.permissions import router as permissions_router
 from app.api.stats import router as stats_router
+from app.api.admin_leave import router as admin_leave_router
+from app.api.admin_payroll import router as admin_payroll_router
+from app.api.admin_reports import router as admin_reports_router
+from app.api.admin_dashboard import router as admin_dashboard_router
+from app.api.payroll import router as payroll_wizard_router
 
 app = FastAPI(title="EmPay HRMS API")
 
 app.add_middleware(
 	CORSMiddleware,
-	allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+	allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
 	allow_credentials=True,
 	allow_methods=["*"],
 	allow_headers=["*"],
@@ -41,6 +46,11 @@ app.include_router(leave_requests_router, prefix="/api/v1")
 app.include_router(realtime_router, prefix="/api/v1")
 app.include_router(permissions_router, prefix="/api/v1")
 app.include_router(stats_router, prefix="/api/v1")
+app.include_router(admin_leave_router, prefix="/api/v1")
+app.include_router(admin_payroll_router, prefix="/api/v1")
+app.include_router(admin_reports_router, prefix="/api/v1")
+app.include_router(admin_dashboard_router, prefix="/api/v1")
+app.include_router(payroll_wizard_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])

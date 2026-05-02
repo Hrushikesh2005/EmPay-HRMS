@@ -9,6 +9,7 @@ class AttendanceLog(Base):
     __tablename__ = "attendance_logs"
     __table_args__ = (
         UniqueConstraint("employee_id", "work_date", name="uq_attendance_employee_date"),
+        {"extend_existing": True},
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)

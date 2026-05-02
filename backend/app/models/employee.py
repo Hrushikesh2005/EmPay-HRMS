@@ -6,6 +6,7 @@ from app.models.enums import EmploymentType
 
 class EmployeeProfile(Base, TimestampMixin):
     __tablename__ = "employee_profiles"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     employee_code: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True, index=True)

@@ -8,7 +8,7 @@ from app.core.database import SessionLocal
 from app.models.base import new_uuid
 from app.models.employee import EmployeeProfile
 from app.models.enums import EmploymentType, UserRole
-from app.models.leave import LeaveType
+from app.models.leave_type import LeaveType
 from app.models.user import User
 
 

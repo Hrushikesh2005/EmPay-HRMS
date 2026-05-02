@@ -70,3 +70,33 @@ def get_employee_salary(employee_id: str, db: Session) -> SalaryStructure:
 	if not salary:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active salary structure found")
 	return salary
+
+def set_employee_salary(employee_id: str, data, db: Session) -> SalaryStructure:
+	from datetime import date
+	
+	# Mark existing active as inactive
+	existing = db.query(SalaryStructure).filter(
+		SalaryStructure.employee_id == employee_id, 
+		SalaryStructure.is_active == True
+	).all()
+	
+	for s in existing:
+		s.is_active = False
+		if not s.effective_to:
+			s.effective_to = date.today()
+
+	salary = SalaryStructure(
+		employee_id=employee_id,
+		basic_salary=data.basic_salary,
+		hra=data.hra,
+		other_allowances=data.other_allowances,
+		pf_employee_pct=data.pf_employee_pct,
+		pf_employer_pct=data.pf_employer_pct,
+		professional_tax=data.professional_tax,
+		effective_from=data.effective_from or date.today(),
+		is_active=True
+	)
+	db.add(salary)
+	db.commit()
+	db.refresh(salary)
+	return salary

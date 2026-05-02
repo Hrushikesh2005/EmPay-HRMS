@@ -32,10 +32,12 @@ def submit_leave_request(
         # (This is handled by our require_permission dependency if we check level here)
         # But we'll do a quick manual check for safety.
         from app.models.permission import Permission
-        role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
-        perm = db.query(Permission).filter(Permission.role == role_str, Permission.module == "leave").first()
-        if not perm or perm.access_level.value != "all":
-             raise HTTPException(status_code=403, detail="You do not have permission to submit leave for others")
+        from app.models.enums import UserRole
+        if current_user.role != UserRole.admin:
+            role_str = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+            perm = db.query(Permission).filter(Permission.role == role_str, Permission.module == "leave").first()
+            if not perm or perm.access_level.value != "all":
+                 raise HTTPException(status_code=403, detail="You do not have permission to submit leave for others")
         target_profile_id = data.employee_id
     else:
         profile = db.query(EmployeeProfile).filter(EmployeeProfile.user_id == current_user.id).first()
