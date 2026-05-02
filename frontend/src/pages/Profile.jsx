@@ -1,18 +1,17 @@
-import React from "react";
 import { PageHeader } from "../components/ui/PageHeader";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
-import { Button } from "../components/ui/Button";
-import { useAuth } from "../context/AuthContext";
+import useAuth from "../hooks/useAuth.js";
 
 // This template serves as both "My Profile" and "Employee Profile (Admin View)"
 // In a real app, you would fetch user data based on route params (e.g. /profile vs /directory/:id)
 export default function Profile() {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <div className="text-slate-500">Loading profile...</div>;
-  }
+  const { user } = useAuth();
 
   const fullName = user?.full_name || "";
   const email = user?.email || "";
@@ -20,8 +19,8 @@ export default function Profile() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <PageHeader 
-        title="Employee Profile" 
+      <PageHeader
+        title="Employee Profile"
         description="View and manage personal and professional details."
         actions={null}
       />
@@ -41,7 +40,9 @@ export default function Profile() {
                       .toUpperCase()
                   : ""}
               </div>
-              <h3 className="text-xl font-bold text-slate-900">{fullName || "Profile"}</h3>
+              <h3 className="text-xl font-bold text-slate-900">
+                {fullName || "Profile"}
+              </h3>
               <p className="text-sm text-slate-500">{role.replace("_", " ")}</p>
             </CardContent>
           </Card>
@@ -54,24 +55,16 @@ export default function Profile() {
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input 
-                  label="Full Name" 
-                  value={fullName} 
-                  disabled 
-                />
-                <Input 
-                  label="Email Address" 
-                  value={email} 
-                  disabled 
-                />
-                <Input 
-                  label="Department" 
+                <Input label="Full Name" value={fullName} disabled />
+                <Input label="Email Address" value={email} disabled />
+                <Input
+                  label="Department"
                   value=""
                   placeholder="Not available"
                   disabled
                 />
-                <Input 
-                  label="Designation" 
+                <Input
+                  label="Designation"
                   value=""
                   placeholder="Not available"
                   disabled

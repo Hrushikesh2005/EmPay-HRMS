@@ -18,7 +18,8 @@
 @layer base {
   body {
     background-color: var(--color-background);
-    color: oklch(0.278 0.033 256.848); /* text-slate-900 equivalent */
+    color: oklch(0.278 0.033 256.848);
+    /* text-slate-900 equivalent */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

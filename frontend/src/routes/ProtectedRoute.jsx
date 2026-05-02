@@ -1,20 +1,24 @@
-import React from "react";
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import useAuth from "../hooks/useAuth.js";
 
-export default function ProtectedRoute({ children }) {
-  const { user, isLoading } = useAuth();
+function normalizeRole(role) {
+  return typeof role === "string" ? role.toLowerCase() : "";
+}
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500">
-        Loading...
-      </div>
-    );
+export default function ProtectedRoute({ allowedRoles, children }) {
+  const auth = useAuth();
+  const role = normalizeRole(auth?.role);
+
+  if (!auth?.isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  if (!user) {
-    return <Navigate to="/" replace />;
+  if (
+    Array.isArray(allowedRoles) &&
+    allowedRoles.length > 0 &&
+    !allowedRoles.map(normalizeRole).includes(role)
+  ) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return children;

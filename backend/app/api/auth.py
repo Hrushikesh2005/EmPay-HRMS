@@ -17,14 +17,14 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=LoginResponse)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-	access_token, refresh_token = login_user(form_data.username, form_data.password, db)
-	return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+	access_token, refresh_token, user = login_user(form_data.username, form_data.password, db)
+	return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "role": user.role, "user": user}
 
 
 @router.post("/refresh", response_model=LoginResponse)
 def refresh(data: RefreshRequest, db: Session = Depends(get_db)):
-	access_token, refresh_token = refresh_access_token(data.refresh_token, db)
-	return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+	access_token, refresh_token, user = refresh_access_token(data.refresh_token, db)
+	return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "role": user.role, "user": user}
 
 
 @router.get("/me", response_model=UserOut)

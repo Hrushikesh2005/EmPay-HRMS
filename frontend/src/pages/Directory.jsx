@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Plus, Filter, MoreHorizontal } from "lucide-react";
-import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { PageHeader } from "../components/ui/PageHeader";
@@ -60,8 +59,8 @@ export default function Directory() {
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Employee Directory" 
+      <PageHeader
+        title="Employee Directory"
         description="Manage and view all employee profiles."
         actions={
           <Button className="gap-2">
@@ -73,9 +72,9 @@ export default function Directory() {
       <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-between sm:flex-row gap-4">
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search by name, code, or department..." 
+          <input
+            type="text"
+            placeholder="Search by name, code, or department..."
             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -83,7 +82,8 @@ export default function Directory() {
         </div>
         <div className="flex items-center justify-between w-full sm:w-auto gap-2">
           <Button variant="secondary" className="gap-2 shrink-0">
-            <Filter className="w-4 h-4" /> <span className="hidden sm:inline">Filters</span>
+            <Filter className="w-4 h-4" />{" "}
+            <span className="hidden sm:inline">Filters</span>
           </Button>
         </div>
       </div>
@@ -102,7 +102,10 @@ export default function Directory() {
           <tbody className="divide-y divide-slate-200 bg-white">
             {isLoading ? (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                <td
+                  colSpan="5"
+                  className="px-6 py-12 text-center text-slate-500"
+                >
                   Loading employees...
                 </td>
               </tr>
@@ -114,13 +117,24 @@ export default function Directory() {
               </tr>
             ) : filteredEmployees.length > 0 ? (
               filteredEmployees.map((emp) => (
-                <tr key={emp.id} className="hover:bg-slate-50 transition-colors">
+                <tr
+                  key={emp.id}
+                  className="hover:bg-slate-50 transition-colors"
+                >
                   <td className="px-6 py-4">
-                    <div className="font-medium text-slate-900">{emp.user?.full_name || "-"}</div>
-                    <div className="text-slate-500 text-xs mt-0.5">{emp.user?.email || "-"}</div>
+                    <div className="font-medium text-slate-900">
+                      {emp.user?.full_name || "-"}
+                    </div>
+                    <div className="text-slate-500 text-xs mt-0.5">
+                      {emp.user?.email || "-"}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 hidden md:table-cell text-slate-600">{emp.department || "-"}</td>
-                  <td className="px-6 py-4 hidden lg:table-cell text-slate-600">{emp.designation || "-"}</td>
+                  <td className="px-6 py-4 hidden md:table-cell text-slate-600">
+                    {emp.department || "-"}
+                  </td>
+                  <td className="px-6 py-4 hidden lg:table-cell text-slate-600">
+                    {emp.designation || "-"}
+                  </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={emp.employment_type || "default"} />
                   </td>
@@ -133,7 +147,10 @@ export default function Directory() {
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                <td
+                  colSpan="5"
+                  className="px-6 py-12 text-center text-slate-500"
+                >
                   No employees found matching "{searchTerm}".
                 </td>
               </tr>

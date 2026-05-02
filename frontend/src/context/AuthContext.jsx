@@ -1,69 +1,118 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { clearTokens, getTokens } from "../services/api";
-import { fetchMe, login as loginRequest } from "../services/auth";
+import { createContext, useEffect, useMemo, useState } from "react";
+import api, { clearSessionTokens, setSessionTokens } from "../api/axios.js";
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+function readJSON(value) {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
 
-  const loadUser = async () => {
-    const { accessToken } = getTokens();
-    if (!accessToken) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
+function normalizeSession(data = {}) {
+  const accessToken = data.access_token || data.accessToken || null;
+  const refreshToken = data.refresh_token || data.refreshToken || null;
+  const role = data.role || data.user?.role || null;
+  const user = data.user || (data.user_id ? { id: data.user_id, role } : null);
 
-    try {
-      const me = await fetchMe();
-      setUser(me);
-    } catch (err) {
-      clearTokens();
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
+  return {
+    accessToken,
+    refreshToken,
+    role,
+    user,
   };
+}
+
+function buildSessionFromStorage() {
+  const accessToken = localStorage.getItem("accessToken");
+  const refreshToken = localStorage.getItem("refreshToken");
+  const role = localStorage.getItem("role");
+  const user = readJSON(localStorage.getItem("user"));
+
+  return {
+    accessToken,
+    refreshToken,
+    role,
+    user,
+  };
+}
+
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(buildSessionFromStorage);
 
   useEffect(() => {
-    loadUser();
-  }, []);
+    const { accessToken, refreshToken, role, user } = session;
 
-  const login = async (email, password) => {
-    setError(null);
-    const response = await loginRequest(email, password);
-    const me = await fetchMe();
-    setUser(me);
-    return response;
+    if (accessToken) localStorage.setItem("accessToken", accessToken);
+    else localStorage.removeItem("accessToken");
+
+    if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+    else localStorage.removeItem("refreshToken");
+
+    if (role) localStorage.setItem("role", role);
+    else localStorage.removeItem("role");
+
+    if (user) localStorage.setItem("user", JSON.stringify(user));
+    else localStorage.removeItem("user");
+  }, [session]);
+
+  const login = async (credentials) => {
+    // FastAPI OAuth2PasswordRequestForm expects form-encoded fields 'username' and 'password'
+    const form = new URLSearchParams();
+    form.append("username", credentials.email || credentials.username || "");
+    form.append("password", credentials.password || "");
+
+    const response = await api.post("/auth/login", form, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    console.log("[AuthContext] Login response:", response.data);
+    const nextSession = normalizeSession(response.data);
+    console.log("[AuthContext] Normalized session:", nextSession);
+    setSession(nextSession);
+    setSessionTokens(nextSession);
+    return nextSession;
+  };
+
+  const register = async (payload) => {
+    const response = await api.post("/auth/register", payload);
+    const nextSession = normalizeSession(response.data);
+    setSession(nextSession);
+    setSessionTokens(nextSession);
+    return nextSession;
   };
 
   const logout = () => {
-    clearTokens();
-    setUser(null);
+    setSession({
+      accessToken: null,
+      refreshToken: null,
+      role: null,
+      user: null,
+    });
+    clearSessionTokens();
+    localStorage.removeItem("role");
+    localStorage.removeItem("user");
   };
 
-  const value = useMemo(
-    () => ({
-      user,
-      isLoading,
-      error,
+  const value = useMemo(() => {
+    const role = session.role || session.user?.role || null;
+
+    return {
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      user: session.user,
+      role,
+      isAuthenticated: Boolean(session.accessToken),
       login,
+      register,
       logout,
-      reloadUser: loadUser,
-    }),
-    [user, isLoading, error]
-  );
+      setSession,
+    };
+  }, [session]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
-}
+export default AuthContext;

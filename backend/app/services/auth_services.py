@@ -53,17 +53,17 @@ def register_user(data, db: Session) -> User:
 	return user
 
 
-def login_user(email: str, password: str, db: Session) -> tuple[str, str]:
+def login_user(email: str, password: str, db: Session) -> tuple[str, str, User]:
 	user = db.query(User).filter(User.email == email).first()
 	if not user or not verify_password(password, user.hashed_password):
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 	if not user.is_active:
 		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is inactive")
 
-	return create_access_token(user), create_refresh_token(user)
+	return create_access_token(user), create_refresh_token(user), user
 
 
-def refresh_access_token(refresh_token: str, db: Session) -> tuple[str, str]:
+def refresh_access_token(refresh_token: str, db: Session) -> tuple[str, str, User]:
 	try:
 		payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
 	except JWTError:
@@ -80,4 +80,4 @@ def refresh_access_token(refresh_token: str, db: Session) -> tuple[str, str]:
 	if not user:
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-	return create_access_token(user), create_refresh_token(user)
+	return create_access_token(user), create_refresh_token(user), user

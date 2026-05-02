@@ -9,10 +9,22 @@ class RegisterRequest(BaseModel):
 	role: UserRole = UserRole.employee
 
 
+class UserLoginData(BaseModel):
+	id: str
+	email: EmailStr
+	full_name: str
+	role: UserRole
+
+	class Config:
+		from_attributes = True
+
+
 class LoginResponse(BaseModel):
 	access_token: str
 	refresh_token: str
 	token_type: str = "bearer"
+	role: UserRole
+	user: UserLoginData
 
 
 class RefreshRequest(BaseModel):
