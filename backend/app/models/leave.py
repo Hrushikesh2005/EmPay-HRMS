@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, new_uuid
 from app.models.enums import LeaveRequestStatus
@@ -15,22 +15,6 @@ class LeaveType(Base, TimestampMixin):
 
     balances = relationship("LeaveBalance", back_populates="leave_type")
     requests = relationship("LeaveRequest", back_populates="leave_type")
-
-class LeaveBalance(Base):
-    __tablename__ = "leave_balances"
-    __table_args__ = (
-        UniqueConstraint("employee_id", "leave_type_id", "year", name="uq_balance_employee_type_year"),
-    )
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
-    employee_id: Mapped[str] = mapped_column(String(36), ForeignKey("employee_profiles.id", ondelete="CASCADE"), nullable=False)
-    leave_type_id: Mapped[str] = mapped_column(String(36), ForeignKey("leave_types.id", ondelete="CASCADE"), nullable=False)
-    year: Mapped[int] = mapped_column(Integer, nullable=False)
-    allocated_days: Mapped[float] = mapped_column(Numeric(5, 1), nullable=False, default=0)
-    used_days: Mapped[float] = mapped_column(Numeric(5, 1), nullable=False, default=0)
-
-    employee = relationship("EmployeeProfile", back_populates="leave_balances")
-    leave_type = relationship("LeaveType", back_populates="balances")
 
 class LeaveRequest(Base, TimestampMixin):
     __tablename__ = "leave_requests"
@@ -49,3 +33,6 @@ class LeaveRequest(Base, TimestampMixin):
 
     employee = relationship("EmployeeProfile", back_populates="leave_requests", foreign_keys=[employee_id])
     leave_type = relationship("LeaveType", back_populates="requests")
+
+
+from app.models.leave_balance import LeaveBalance
