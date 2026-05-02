@@ -6,8 +6,8 @@ import useAuth from "../../hooks/useAuth.js";
 const ALL_NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "hr_officer", "payroll_officer", "employee"] },
   { name: "Directory", href: "/directory", icon: Users, roles: ["admin", "hr_officer", "payroll_officer", "employee"] },
-  { name: "Attendance", href: "/attendance", icon: Clock, roles: ["admin", "hr_officer", "employee"] },
-  { name: "Leave", href: "/leave", icon: Calendar, roles: ["admin", "hr_officer", "employee"] },
+  { name: "Attendance", href: "/attendance", icon: Clock, roles: ["admin", "hr_officer", "payroll_officer", "employee"] },
+  { name: "Leave", href: "/leave", icon: Calendar, roles: ["admin", "hr_officer", "payroll_officer", "employee"] },
   { name: "Payroll", href: "/payroll", icon: CreditCard, roles: ["admin", "payroll_officer"] },
   { name: "Reports", href: "/reports", icon: FileText, roles: ["admin", "hr_officer", "payroll_officer"] },
   { name: "Settings", href: "/settings", icon: Settings, roles: ["admin"] },
