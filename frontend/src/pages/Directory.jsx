@@ -105,7 +105,7 @@ export default function Directory() {
         <Card className="overflow-hidden">
           <DataTable 
             columns={columns} 
-            data=+{filteredEmployees} 
+            data={filteredEmployees} 
             emptyMessage={`No employees found matching "${searchTerm}".`} 
           />
         </Card>
