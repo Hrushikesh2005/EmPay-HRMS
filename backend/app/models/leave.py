@@ -1,20 +1,9 @@
 from typing import Optional
 from datetime import datetime
-from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin, new_uuid
 from app.models.enums import LeaveRequestStatus
-
-class LeaveType(Base, TimestampMixin):
-    __tablename__ = "leave_types"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
-    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    default_days_per_year: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    is_paid: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-
-    balances = relationship("LeaveBalance", back_populates="leave_type")
-    requests = relationship("LeaveRequest", back_populates="leave_type")
 
 class LeaveRequest(Base, TimestampMixin):
     __tablename__ = "leave_requests"
@@ -36,3 +25,4 @@ class LeaveRequest(Base, TimestampMixin):
 
 
 from app.models.leave_balance import LeaveBalance
+from app.models.leave_type import LeaveType

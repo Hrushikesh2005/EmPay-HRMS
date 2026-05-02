@@ -4,6 +4,7 @@ from app.models.user import User
 from app.models.employee import EmployeeProfile
 from app.models.salary import SalaryStructure
 from app.models.attendance import AttendanceLog
-from app.models.leave import LeaveType, LeaveRequest
+from app.models.leave_type import LeaveType
+from app.models.leave_request import LeaveRequest
 from app.models.leave_balance import LeaveBalance
 from app.models.payroll import Payrun, Payslip
