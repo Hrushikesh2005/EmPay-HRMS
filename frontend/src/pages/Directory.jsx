@@ -4,8 +4,12 @@ import { Button } from "../components/ui/Button";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { fetchEmployees } from "../services/employees";
+import useAuth from "../hooks/useAuth.js";
 
 export default function Directory() {
+  const { role } = useAuth();
+  const canEdit = role === "admin" || role === "hr_officer";
+
   const [searchTerm, setSearchTerm] = useState("");
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,9 +67,11 @@ export default function Directory() {
         title="Employee Directory"
         description="Manage and view all employee profiles."
         actions={
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" /> Add Employee
-          </Button>
+          canEdit && (
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" /> Add Employee
+            </Button>
+          )
         }
       />
 
@@ -139,9 +145,11 @@ export default function Directory() {
                     <StatusBadge status={emp.employment_type || "default"} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
+                    {canEdit && (
+                      <button className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
+                        <MoreHorizontal className="w-4 h-4" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
