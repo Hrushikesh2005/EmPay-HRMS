@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Directory from "./pages/Directory";
+import Profile from "./pages/Profile";
 import AppShell from "./components/layout/AppShell";
 
 // Temporary placeholder for dashboard content
@@ -25,6 +26,7 @@ function App() {
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardMock />} />
           <Route path="/directory" element={<Directory />} />
+          <Route path="/profile" element={<Profile />} />
           {/* We will map /attendance, etc. here later */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
