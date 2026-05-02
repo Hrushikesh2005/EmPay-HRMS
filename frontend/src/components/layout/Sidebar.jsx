@@ -1,4 +1,4 @@
-﻿import { NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -8,6 +8,7 @@ import {
   Settings,
   Building2,
   BarChart3,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 import useAuth from "../../hooks/useAuth.js";
@@ -53,6 +54,12 @@ const ALL_NAV_ITEMS = [
     name: "Settings",
     href: "/settings",
     icon: Settings,
+    roles: ["admin"],
+  },
+  {
+    name: "Register",
+    href: "/register",
+    icon: UserPlus,
     roles: ["admin"],
   },
 ];

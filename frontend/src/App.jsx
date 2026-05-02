@@ -12,6 +12,7 @@ import Leave from "./pages/Leave.jsx";
 import Payroll from "./pages/Payroll.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
+import ForcePasswordChange from "./pages/ForcePasswordChange.jsx";
 
 const ALL_ROLES = ["admin", "hr_officer", "payroll_officer", "employee"];
 
@@ -20,13 +21,28 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route 
+          path="/force-password-change" 
+          element={
+            <ProtectedRoute skipPasswordCheck>
+              <ForcePasswordChange />
+            </ProtectedRoute>
+          } 
+        />
 
         {/* Protected Routes */}
         <Route element={<AppShell />}>
           <Route element={<RoleBasedRoute allowedRoles={ALL_ROLES} />}>
             <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/register"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <Register />
+              </ProtectedRoute>
+            }
+          />
             <Route path="/directory" element={<Directory />} />
             <Route path="/profile" element={<Profile />} />
           </Route>

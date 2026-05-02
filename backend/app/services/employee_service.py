@@ -28,7 +28,6 @@ def create_employee_profile(data, db: Session) -> EmployeeProfile:
 	employee = EmployeeProfile(
 		id=new_uuid(),
 		user_id=data.user_id,
-		manager_id=data.manager_id,
 		department=data.department,
 		designation=data.designation,
 		phone=data.phone,
@@ -44,8 +43,6 @@ def create_employee_profile(data, db: Session) -> EmployeeProfile:
 def update_employee(employee_id: str, data, db: Session) -> EmployeeProfile:
 	employee = get_employee(employee_id, db)
 
-	if data.manager_id is not None:
-		employee.manager_id = data.manager_id
 	if data.department is not None:
 		employee.department = data.department
 	if data.designation is not None:

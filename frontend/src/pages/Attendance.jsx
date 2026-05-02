@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
-import { Clock, CheckCircle2, History, Users } from "lucide-react";
+import { format, differenceInMinutes, parseISO } from "date-fns";
+import { Clock, CheckCircle2, History, Loader2, Calendar, Users } from "lucide-react";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -9,15 +9,7 @@ import { StatusBadge } from "../components/ui/StatusBadge";
 import useAuth from "../hooks/useAuth.js";
 import api from "../api/axios.js";
 import useRealtime from "../hooks/useRealtime.js";
-
-// Mock Data
-const ATTENDANCE_HISTORY = [
-  { id: 1, date: '2026-05-02', checkIn: '09:02 AM', checkOut: '--:-- PM', hours: '-', status: 'present' },
-  { id: 2, date: '2026-05-01', checkIn: '08:55 AM', checkOut: '05:30 PM', hours: '8h 35m', status: 'present' },
-  { id: 3, date: '2026-04-30', checkIn: '09:15 AM', checkOut: '02:00 PM', hours: '4h 45m', status: 'half_day' },
-  { id: 4, date: '2026-04-29', checkIn: '--:-- AM', checkOut: '--:-- PM', hours: '-', status: 'absent' },
-  { id: 5, date: '2026-04-28', checkIn: '--:-- AM', checkOut: '--:-- PM', hours: '-', status: 'on_leave' },
-];
+import { checkIn, checkOut, getMyAttendanceHistory, getMyLeaveBalances } from "../services/attendance";
 
 const EMPLOYEE_ATTENDANCE = [
   { id: 1, name: "Dev Nair", status: "present", checkIn: "09:02 AM", checkOut: "--:-- PM", hours: "--", todayStatus: "Checked In" },
@@ -31,6 +23,11 @@ export default function Attendance() {
   const isAdminOrHr = role === 'admin' || role === 'hr_officer';
   
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [history, setHistory] = useState([]);
+  const [leaveBalances, setLeaveBalances] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
   const [attendanceHistory, setAttendanceHistory] = useState(ATTENDANCE_HISTORY);
@@ -82,6 +79,67 @@ export default function Attendance() {
     }
   });
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [historyData, balancesData] = await Promise.all([
+        getMyAttendanceHistory(),
+        getMyLeaveBalances()
+      ]);
+      setHistory(historyData);
+      setLeaveBalances(balancesData);
+
+      // Check today's status
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      const todayEntry = historyData.find(entry => entry.work_date === todayStr);
+      
+      if (todayEntry) {
+        if (todayEntry.check_in) setIsCheckedIn(true);
+        if (todayEntry.check_out) setIsCheckedOut(true);
+      }
+    } catch (error) {
+      console.error("Failed to load attendance data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCheckIn = async () => {
+    try {
+      setActionLoading(true);
+      await checkIn();
+      await fetchData(); // Refresh data
+    } catch (error) {
+      console.error("Check-in failed", error);
+      alert(error.response?.data?.detail || "Check-in failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCheckOut = async () => {
+    try {
+      setActionLoading(true);
+      await checkOut();
+      await fetchData(); // Refresh data
+    } catch (error) {
+      console.error("Check-out failed", error);
+      alert(error.response?.data?.detail || "Check-out failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const calculateHours = (checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return '-';
+    const mins = differenceInMinutes(parseISO(checkOut), parseISO(checkIn));
+    const hours = Math.floor(mins / 60);
+    const remainingMins = mins % 60;
+    return `${hours}h ${remainingMins}m`;
   const handleCheckInOut = () => {
     if (!isCheckedIn) {
       api
@@ -103,60 +161,30 @@ export default function Attendance() {
   };
 
   const columns = [
-    { header: "Date", accessor: "date", render: (row) => format(new Date(row.date), "dd MMM yyyy") },
-    { header: "Check In", accessor: "checkIn" },
-    { header: "Check Out", accessor: "checkOut" },
-    { header: "Working Hours", accessor: "hours" },
+    { header: "Date", accessor: "work_date", render: (row) => format(parseISO(row.work_date), "dd MMM yyyy") },
+    { header: "Check In", accessor: "check_in", render: (row) => row.check_in ? format(parseISO(row.check_in), "hh:mm a") : '--:--' },
+    { header: "Check Out", accessor: "check_out", render: (row) => row.check_out ? format(parseISO(row.check_out), "hh:mm a") : '--:--' },
+    { header: "Working Hours", accessor: "hours", render: (row) => calculateHours(row.check_in, row.check_out) },
     { header: "Status", accessor: "status", render: (row) => <StatusBadge status={row.status} /> }
   ];
 
-  if (isAdminOrHr) {
+  if (loading) {
     return (
-      <div className="space-y-6">
-        <PageHeader 
-          title="Attendance Overview" 
-          description="Monitor employee attendance and check-in status across the organization."
-        />
-
-        <Card>
-          <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between py-4">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-slate-400" />
-              <CardTitle className="text-lg">Employee Attendance</CardTitle>
-            </div>
-            <Button variant="secondary" size="sm">Export CSV</Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            <DataTable
-              columns={[
-                { header: "Employee", accessor: "name" },
-                { header: "Today Status", accessor: "todayStatus" },
-                { header: "Check In", accessor: "checkIn" },
-                { header: "Check Out", accessor: "checkOut" },
-                { header: "Hours", accessor: "hours" },
-                { header: "Status", accessor: "status", render: (row) => <StatusBadge status={row.status} /> },
-              ]}
-              data={EMPLOYEE_ATTENDANCE}
-            />
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
   }
 
-  // Employee view
   return (
     <div className="space-y-6">
       <PageHeader 
         title="Attendance Tracking" 
-        description="Mark your daily attendance and view your monthly timesheet."
+        description="Mark your daily attendance, view your monthly timesheet, and track your leaves."
       />
 
       {/* Action Banner */}
       <Card className="bg-primary-50 border-primary-100 shadow-sm overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-          <Clock className="w-32 h-32 text-primary-900" />
-        </div>
         <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
           <div>
             <p className="text-sm font-semibold text-primary-600 uppercase tracking-wider mb-1">
@@ -168,7 +196,7 @@ export default function Attendance() {
             <div className="mt-3 flex items-center gap-2">
               <StatusBadge status={isCheckedOut ? "checked_out" : isCheckedIn ? "present" : "pending"} />
               <span className="text-sm text-slate-500">
-                {isCheckedOut ? "You have completed your shift." : isCheckedIn ? "You are currently checked in." : "Please mark your attendance."}
+                {isCheckedOut ? "You have completed your shift for today." : isCheckedIn ? "You are currently checked in." : "Please mark your attendance."}
               </span>
             </div>
           </div>
@@ -178,11 +206,13 @@ export default function Attendance() {
               size="lg" 
               className="w-full sm:w-48 text-lg py-6"
               variant={isCheckedIn && !isCheckedOut ? "danger" : "primary"}
-              disabled={isCheckedOut}
-              onClick={handleCheckInOut}
+              disabled={isCheckedOut || actionLoading}
+              onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
             >
-              {isCheckedOut ? (
-                <><CheckCircle2 className="mr-2" /> Shift Ended</>
+              {actionLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+              ) : isCheckedOut ? (
+                <><CheckCircle2 className="mr-2 inline" /> Shift Ended</>
               ) : isCheckedIn ? (
                 "Check Out"
               ) : (
@@ -192,6 +222,35 @@ export default function Attendance() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Leave Balances Grid */}
+      <div>
+        <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-slate-500" />
+          Leave Balances
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {leaveBalances.length === 0 ? (
+            <div className="col-span-full text-slate-500 text-sm">No leave balances found for this year.</div>
+          ) : leaveBalances.map((balance) => (
+            <Card key={balance.id}>
+              <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
+                <span className="text-sm font-medium text-slate-500 mb-1">{balance.leave_type.name}</span>
+                <span className="text-2xl font-bold text-primary-600">
+                  {balance.allocated_days - balance.used_days} <span className="text-sm font-normal text-slate-400">remaining</span>
+                </span>
+                <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3">
+                  <div 
+                    className="bg-primary-500 h-1.5 rounded-full" 
+                    style={{ width: `${(balance.used_days / balance.allocated_days) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-xs text-slate-400 mt-1">{balance.used_days} used out of {balance.allocated_days}</span>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Monthly grid/History */}
       <Card>
@@ -203,7 +262,7 @@ export default function Attendance() {
           <Button variant="secondary" size="sm">Export CSV</Button>
         </CardHeader>
         <CardContent className="p-0">
-          <DataTable columns={columns} data={attendanceHistory} />
+          <DataTable columns={columns} data={history} emptyMessage={null} />
         </CardContent>
       </Card>
     </div>
