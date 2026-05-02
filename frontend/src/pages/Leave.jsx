@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { Calendar, Check, X, FileText } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -28,8 +29,9 @@ export default function Leave() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
   
   // Mock role routing
-  const MOCK_ROLE = "hr_officer"; 
-  const isHR = MOCK_ROLE === 'admin' || MOCK_ROLE === 'hr_officer';
+  const { user } = useAuth() || {};
+  const MOCK_ROLE = user?.role || "payroll_officer"; 
+  const isHR = MOCK_ROLE === 'admin' || MOCK_ROLE === 'hr_officer' || MOCK_ROLE === 'payroll_officer';
 
   const onSubmitLeave = (data) => {
     console.log("Submitting Leave Request: ", data);
