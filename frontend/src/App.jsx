@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import RoleBasedRoute from "./routes/RoleBasedRoute.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -124,16 +125,18 @@ function App() {
 
           {/* Payroll Specialist Roles */}
           <Route element={<RoleBasedRoute allowedRoles={PAYROLL_ROLES} />}>
-            <Route path="/payroll" element={<Payroll />} />
+            {/* Payroll Specialist Roles */}
+            <Route element={<RoleBasedRoute allowedRoles={PAYROLL_ROLES} />}>
+              <Route path="/payroll" element={<Payroll />} />
+            </Route>
+
+            {/* Internal Staff Roles (Reports) */}
+            <Route element={<RoleBasedRoute allowedRoles={ADMIN_HR_PAYROLL} />}>
+              <Route path="/reports" element={<Reports />} />
+            </Route>
           </Route>
 
-          {/* Internal Staff Roles (Reports) */}
-          <Route element={<RoleBasedRoute allowedRoles={ADMIN_HR_PAYROLL} />}>
-            <Route path="/reports" element={<Reports />} />
-          </Route>
-        </Route>
-
-        <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
