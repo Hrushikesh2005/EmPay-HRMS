@@ -7,8 +7,7 @@ import Profile from "./pages/Profile";
 import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
 import AppShell from "./components/layout/AppShell";
-
-// The DashboardMock was removed because we now have a real Dashboard component.
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
   return (
@@ -18,13 +17,18 @@ function App() {
         <Route path="/" element={<Login />} />
         
         {/* Protected Routes Wrapper */}
-        <Route element={<AppShell />}>
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppShell />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/directory" element={<Directory />} />
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/leave" element={<Leave />} />
           <Route path="/profile" element={<Profile />} />
-          {/* We will map /attendance, etc. here later */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>

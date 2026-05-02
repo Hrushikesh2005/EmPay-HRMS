@@ -1,14 +1,18 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Building2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,12 +21,16 @@ export default function Login() {
       return setError("Please fill in all fields.");
     }
     setIsLoading(true);
-    
-    // UI behavior mock (FE Architect will wire real API via Axios later)
-    setTimeout(() => {
+
+    try {
+      await login(email, password);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setError(detail || "Login failed. Please try again.");
+    } finally {
       setIsLoading(false);
-      setError("Backend integration pending. Use placeholder credentials.");
-    }, 1000);
+    }
   };
 
   return (
@@ -71,7 +79,7 @@ export default function Login() {
             
             <div className="mt-6 text-center text-sm text-slate-500">
               <p>Demo Credentials:</p>
-              <p className="mt-1">admin@empay.io | hr@empay.io | emp01@empay.io</p>
+              <p className="mt-1">admin@empay.com | hr1@empay.com | emp1@empay.com</p>
             </div>
           </CardContent>
         </Card>

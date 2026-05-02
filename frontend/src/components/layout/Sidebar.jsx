@@ -2,9 +2,7 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { LayoutDashboard, Users, Calendar, Clock, CreditCard, Settings, Building2 } from "lucide-react";
 import { cn } from "../../utils/cn";
-
-// Mock user role (FE AuthArchitect will replace this with AuthContext)
-const MOCK_ROLE = "hr_officer"; // Can be 'admin', 'hr_officer', 'payroll_officer', 'employee'
+import { useAuth } from "../../context/AuthContext";
 
 const ALL_NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["admin", "hr_officer", "payroll_officer", "employee"] },
@@ -16,8 +14,11 @@ const ALL_NAV_ITEMS = [
 ];
 
 export default function Sidebar() {
+  const { user } = useAuth();
+  const role = user?.role || "employee";
+
   // Filter navigation items based on the user's role
-  const visibleNavItems = ALL_NAV_ITEMS.filter(item => item.roles.includes(MOCK_ROLE));
+  const visibleNavItems = ALL_NAV_ITEMS.filter(item => item.roles.includes(role));
 
   return (
     <aside className="w-64 bg-slate-900 flex flex-col h-full hidden md:flex border-r border-slate-800 shrink-0">
@@ -52,7 +53,7 @@ export default function Sidebar() {
       <div className="p-4 border-t border-slate-800">
         <div className="px-3 py-2 rounded-lg bg-slate-800 text-slate-300 text-sm flex items-center justify-between">
           <span className="truncate">Active Role:</span>
-          <StatusBadge status={MOCK_ROLE} className="bg-slate-700 text-xs border-slate-600 text-slate-200" />
+          <StatusBadge status={role} className="bg-slate-700 text-xs border-slate-600 text-slate-200" />
         </div>
       </div>
     </aside>

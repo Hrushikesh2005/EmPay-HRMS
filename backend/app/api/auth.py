@@ -1,1 +1,32 @@
-"""Authentication router placeholder (define auth endpoints here)."""
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.core.dependencies import get_current_user
+from app.schemas.auth import RegisterRequest, LoginResponse, RefreshRequest, UserOut
+from app.services.auth_services import register_user, login_user, refresh_access_token
+from app.models.user import User
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+@router.post("/register", response_model=UserOut)
+def register(data: RegisterRequest, db: Session = Depends(get_db)):
+	return register_user(data, db)
+
+
+@router.post("/login", response_model=LoginResponse)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+	access_token, refresh_token = login_user(form_data.username, form_data.password, db)
+	return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+
+@router.post("/refresh", response_model=LoginResponse)
+def refresh(data: RefreshRequest, db: Session = Depends(get_db)):
+	access_token, refresh_token = refresh_access_token(data.refresh_token, db)
+	return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=UserOut)
+def me(current_user: User = Depends(get_current_user)):
+	return current_user

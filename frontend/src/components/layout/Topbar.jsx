@@ -1,12 +1,24 @@
 import React from "react";
 import { Bell, Search, Menu, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Topbar() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const displayName = user?.full_name || "User";
+  const roleLabel = user?.role ? user.role.replace("_", " ") : "";
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((chunk) => chunk[0])
+    .join("")
+    .toUpperCase();
 
   const handleLogout = () => {
-    // FE Architect will hook this up to AuthContext later
+    logout();
     navigate("/");
   };
 
@@ -39,11 +51,11 @@ export default function Topbar() {
 
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex flex-col items-end">
-            <span className="text-sm font-medium text-slate-900 leading-none">Admin User</span>
-            <span className="text-xs text-slate-500 mt-1">HR & Admin</span>
+            <span className="text-sm font-medium text-slate-900 leading-none">{displayName}</span>
+            <span className="text-xs text-slate-500 mt-1">{roleLabel}</span>
           </div>
           <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm border border-primary-200 shrink-0">
-            AU
+            {initials || "U"}
           </div>
           <button 
             onClick={handleLogout}

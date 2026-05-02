@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import decode_access_token
 from app.db.session import get_db
 from app.models.user import User
+from app.models.enums import UserRole
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -46,3 +47,25 @@ async def get_current_user(
 
 
 get_current_active_user = get_current_user
+
+
+def require_roles(*roles: UserRole):
+    allowed = set(roles)
+
+    async def _checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        return current_user
+
+    return _checker
+
+
+# Usage examples:
+# Admin only
+# current_user: User = Depends(require_roles(UserRole.admin))
+# HR Officer only
+# current_user: User = Depends(require_roles(UserRole.hr_officer))
+# Payroll Officer only
+# current_user: User = Depends(require_roles(UserRole.payroll_officer))
+# HR Officer OR Admin
+# current_user: User = Depends(require_roles(UserRole.hr_officer, UserRole.admin))
