@@ -12,7 +12,7 @@ from app.models.base import new_uuid
 from app.models.employee import EmployeeProfile
 from app.models.enums import EmploymentType, UserRole
 from app.models.user import User
-from app.schemas.user import UserAdminOut, UserStatusUpdate
+from app.schemas.user import UserAdminOut, UserStatusUpdate, UserRoleUpdate
 from app.services.auth_services import hash_password
 from app.services.email_service import send_welcome_email
 
@@ -118,11 +118,30 @@ def update_user_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
+    print(f"DEBUG: Attempting to update status for user_id: {user_id}")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
+        print(f"DEBUG: User with id {user_id} NOT FOUND in database")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     user.is_active = data.is_active
     db.commit()
     db.refresh(user)
-    return user
+    return user
+
+
+@router.patch("/{user_id}/role", response_model=UserAdminOut)
+def update_user_role(
+    user_id: str,
+    data: UserRoleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    user.role = data.role
+    db.commit()
+    db.refresh(user)
+    return user

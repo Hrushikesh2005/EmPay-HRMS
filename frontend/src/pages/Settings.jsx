@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import {
   CheckCircle2,
   Search,
@@ -103,6 +104,27 @@ export default function Settings() {
     }
   };
 
+  const handleRoleChange = async (user, newRole) => {
+    try {
+      setSavingId(user.id);
+      const response = await api.patch(`/users/${user.id}/role`, {
+        role: newRole,
+      });
+
+      setUsers((currentUsers) =>
+        currentUsers.map((item) =>
+          item.id === user.id ? response.data : item,
+        ),
+      );
+    } catch (requestError) {
+      alert(
+        requestError?.response?.data?.detail || "Unable to update user role.",
+      );
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -115,7 +137,19 @@ export default function Settings() {
     {
       header: "Role",
       accessor: "role",
-      render: (row) => (row.role ? row.role.replace("_", " ") : ""),
+      render: (row) => (
+        <select
+          value={row.role}
+          onChange={(e) => handleRoleChange(row, e.target.value)}
+          disabled={savingId === row.id}
+          className="text-xs border border-slate-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+        >
+          <option value="employee">Employee</option>
+          <option value="hr_officer">HR Officer</option>
+          <option value="payroll_officer">Payroll Officer</option>
+          <option value="admin">Admin</option>
+        </select>
+      ),
     },
     {
       header: "Status",

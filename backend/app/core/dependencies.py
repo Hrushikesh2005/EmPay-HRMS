@@ -18,9 +18,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 	except JWTError:
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-	user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
+	user = db.query(User).filter(User.id == user_id).first()
 	if not user:
+		print(f"DEBUG AUTH: User ID {user_id} from token NOT FOUND in DB")
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+	if not user.is_active:
+		print(f"DEBUG AUTH: User {user.email} is INACTIVE. Rejecting request.")
+		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User is inactive")
+
 	return user
 
 
