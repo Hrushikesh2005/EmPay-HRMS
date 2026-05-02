@@ -15,7 +15,8 @@ def apply(
 	db: Session = Depends(get_db),
 	current_user: User = Depends(require_roles("employee")),
 ):
-	return apply_leave(current_user, data, db)
+	result = apply_leave(current_user, data, db)
+	return LeaveRequestOut.from_orm_with_name(result)
 
 
 @router.get("/me", response_model=list[LeaveRequestOut])
@@ -23,7 +24,8 @@ def list_me(
 	db: Session = Depends(get_db),
 	current_user: User = Depends(require_roles("employee")),
 ):
-	return list_my_leaves(current_user, db)
+	results = list_my_leaves(current_user, db)
+	return [LeaveRequestOut.from_orm_with_name(r) for r in results]
 
 
 @router.get("", response_model=list[LeaveRequestOut])
@@ -31,4 +33,5 @@ def list_all(
 	db: Session = Depends(get_db),
 	current_user: User = Depends(require_roles("hr_officer", "payroll_officer", "admin")),
 ):
-	return list_all_leaves(db)
+	results = list_all_leaves(db)
+	return [LeaveRequestOut.from_orm_with_name(r) for r in results]

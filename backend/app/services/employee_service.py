@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.employee import EmployeeProfile
+from app.models.salary import SalaryStructure
 from app.models.user import User
 from app.models.base import new_uuid
 
@@ -57,3 +58,15 @@ def update_employee(employee_id: str, data, db: Session) -> EmployeeProfile:
 	db.commit()
 	db.refresh(employee)
 	return employee
+
+
+def get_employee_salary(employee_id: str, db: Session) -> SalaryStructure:
+	salary = (
+		db.query(SalaryStructure)
+		.filter(SalaryStructure.employee_id == employee_id, SalaryStructure.is_active == True)
+		.order_by(SalaryStructure.effective_from.desc())
+		.first()
+	)
+	if not salary:
+		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No active salary structure found")
+	return salary

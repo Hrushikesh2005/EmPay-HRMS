@@ -369,6 +369,7 @@ function EmployeeLeaveView() {
       render: (row) => fmtDate(row.end_date),
     },
     { header: "Days", accessor: "total_days" },
+    { header: "Days", accessor: "total_days" },
     {
       header: "Status",
       accessor: "status",

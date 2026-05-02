@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UserPlus, Building2, Phone, Briefcase, Calendar, ShieldCheck } from 'lucide-react'
+import { UserPlus, Building2, Phone, Briefcase, ShieldCheck } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
@@ -256,4 +256,4 @@ export default function Register() {
       </form>
     </div>
   )
-}
+}

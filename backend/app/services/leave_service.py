@@ -1,6 +1,6 @@
 from datetime import date
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.base import new_uuid
 from app.models.employee import EmployeeProfile
 from app.models.leave_request import LeaveRequest
@@ -43,6 +43,8 @@ def apply_leave(user: User, data, db: Session) -> LeaveRequest:
 	db.add(request)
 	db.commit()
 	db.refresh(request)
+	# Re-query with joinedload to populate leave_type relationship for serialization
+	request = db.query(LeaveRequest).options(joinedload(LeaveRequest.leave_type)).filter(LeaveRequest.id == request.id).first()
 	# send realtime update to the requester (fire-and-forget)
 	try:
 		import asyncio
@@ -74,6 +76,7 @@ def list_my_leaves(user: User, db: Session) -> list[LeaveRequest]:
 	profile = _get_employee_profile(user, db)
 	return (
 		db.query(LeaveRequest)
+		.options(joinedload(LeaveRequest.leave_type))
 		.filter(LeaveRequest.employee_id == profile.id)
 		.order_by(LeaveRequest.created_at.desc())
 		.all()
@@ -81,4 +84,9 @@ def list_my_leaves(user: User, db: Session) -> list[LeaveRequest]:
 
 
 def list_all_leaves(db: Session) -> list[LeaveRequest]:
-	return db.query(LeaveRequest).order_by(LeaveRequest.created_at.desc()).all()
+	return (
+		db.query(LeaveRequest)
+		.options(joinedload(LeaveRequest.leave_type))
+		.order_by(LeaveRequest.created_at.desc())
+		.all()
+	)

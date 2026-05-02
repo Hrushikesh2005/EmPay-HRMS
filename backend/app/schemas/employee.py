@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 from app.models.enums import EmploymentType, UserRole
@@ -41,6 +42,23 @@ class EmployeeProfileOut(BaseModel):
 	date_of_joining: Optional[date]
 	employment_type: EmploymentType
 	user: EmployeeUserOut
+
+	class Config:
+		from_attributes = True
+
+
+class SalaryStructureOut(BaseModel):
+	id: str
+	employee_id: str
+	basic_salary: Decimal
+	hra: Decimal
+	other_allowances: Decimal
+	pf_employee_pct: Decimal
+	pf_employer_pct: Decimal
+	professional_tax: Decimal
+	effective_from: date
+	effective_to: Optional[date]
+	is_active: bool
 
 	class Config:
 		from_attributes = True

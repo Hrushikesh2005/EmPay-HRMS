@@ -1,10 +1,33 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, Plus, Filter, MoreHorizontal } from "lucide-react";
+import { Search, Plus, Filter } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { PageHeader } from "../components/ui/PageHeader";
+import { EmployeeProfileView } from "../components/ui/EmployeeProfileView";
 import { fetchEmployees } from "../services/employees";
 import useAuth from "../hooks/useAuth.js";
+
+const AVATAR_COLORS = [
+  "from-violet-500 to-purple-600",
+  "from-blue-500 to-indigo-600",
+  "from-emerald-500 to-teal-600",
+  "from-rose-500 to-pink-600",
+  "from-amber-500 to-orange-600",
+  "from-cyan-500 to-sky-600",
+];
+
+function getInitials(name = "") {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
+function getAvatarColor(name = "") {
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+}
 
 export default function Directory() {
   const { role } = useAuth();
@@ -14,58 +37,52 @@ export default function Directory() {
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
-
     const loadEmployees = async () => {
       try {
         const data = await fetchEmployees();
-        if (isMounted) {
-          setEmployees(data || []);
-        }
+        if (isMounted) setEmployees(data || []);
       } catch (err) {
-        if (isMounted) {
-          const detail = err?.response?.data?.detail;
-          setError(detail || "Unable to load employees.");
-        }
+        if (isMounted)
+          setError(err?.response?.data?.detail || "Unable to load employees.");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     };
-
     loadEmployees();
-
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Simple client-side search logic
   const filteredEmployees = useMemo(() => {
-    const normalized = searchTerm.toLowerCase();
-    return employees.filter((emp) => {
-      const name = emp.user?.full_name || "";
-      const email = emp.user?.email || "";
-      const department = emp.department || "";
-      const designation = emp.designation || "";
-
-      return (
-        name.toLowerCase().includes(normalized) ||
-        email.toLowerCase().includes(normalized) ||
-        department.toLowerCase().includes(normalized) ||
-        designation.toLowerCase().includes(normalized)
-      );
-    });
+    const q = searchTerm.toLowerCase();
+    return employees.filter((emp) =>
+      [emp.user?.full_name, emp.user?.email, emp.department, emp.designation]
+        .filter(Boolean)
+        .some((v) => v.toLowerCase().includes(q)),
+    );
   }, [employees, searchTerm]);
 
+  // ── When an employee is selected, show their full-page profile ──
+  if (selectedEmployee) {
+    return (
+      <EmployeeProfileView
+        employee={selectedEmployee}
+        onBack={() => setSelectedEmployee(null)}
+      />
+    );
+  }
+
+  // ── Otherwise show the directory listing ──
   return (
     <div className="space-y-6">
       <PageHeader
         title="Employee Directory"
-        description="Manage and view all employee profiles."
+        description="Click any employee card to view their full profile."
         actions={
           canEdit && (
             <Button className="gap-2">
@@ -75,97 +92,90 @@ export default function Directory() {
         }
       />
 
-      <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex flex-col items-center justify-between sm:flex-row gap-4">
+      {/* Search & Filter bar */}
+      <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-sm flex flex-col sm:flex-row items-center gap-4">
         <div className="relative w-full sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by name, code, or department..."
+            placeholder="Search by name, email, or department…"
             className="w-full pl-9 pr-4 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center justify-between w-full sm:w-auto gap-2">
-          <Button variant="secondary" className="gap-2 shrink-0">
-            <Filter className="w-4 h-4" />{" "}
-            <span className="hidden sm:inline">Filters</span>
-          </Button>
+        <Button variant="secondary" className="gap-2 shrink-0">
+          <Filter className="w-4 h-4" />
+          <span className="hidden sm:inline">Filters</span>
+        </Button>
+      </div>
+
+      {/* Employee Cards */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="h-32 bg-white border border-slate-200 rounded-xl animate-pulse"
+            />
+          ))}
         </div>
-      </div>
-      {/* Data Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
-            <tr>
-              <th className="px-6 py-4">Employee</th>
-              <th className="px-6 py-4 hidden md:table-cell">Department</th>
-              <th className="px-6 py-4 hidden lg:table-cell">Designation</th>
-              <th className="px-6 py-4">Employment</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 bg-white">
-            {isLoading ? (
-              <tr>
-                <td
-                  colSpan="5"
-                  className="px-6 py-12 text-center text-slate-500"
-                >
-                  Loading employees...
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan="5" className="px-6 py-12 text-center text-red-500">
-                  {error}
-                </td>
-              </tr>
-            ) : filteredEmployees.length > 0 ? (
-              filteredEmployees.map((emp) => (
-                <tr
-                  key={emp.id}
-                  className="hover:bg-slate-50 transition-colors"
-                >
-                  <td className="px-6 py-4">
-                    <div className="font-medium text-slate-900">
-                      {emp.user?.full_name || "-"}
-                    </div>
-                    <div className="text-slate-500 text-xs mt-0.5">
-                      {emp.user?.email || "-"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 hidden md:table-cell text-slate-600">
-                    {emp.department || "-"}
-                  </td>
-                  <td className="px-6 py-4 hidden lg:table-cell text-slate-600">
-                    {emp.designation || "-"}
-                  </td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={emp.employment_type || "default"} />
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {canEdit && (
-                      <button className="p-1.5 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-md transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="5"
-                  className="px-6 py-12 text-center text-slate-500"
-                >
-                  No employees found matching "{searchTerm}".
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-6 text-sm text-center">
+          {error}
+        </div>
+      ) : filteredEmployees.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredEmployees.map((emp) => {
+            const name = emp.user?.full_name || "Unknown";
+            const color = getAvatarColor(name);
+
+            return (
+              <button
+                key={emp.id}
+                onClick={() => setSelectedEmployee(emp)}
+                className="w-full text-left bg-white border border-slate-200 rounded-xl p-5 shadow-sm transition-all duration-200 group hover:shadow-md hover:-translate-y-0.5 hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400"
+              >
+                {/* Avatar + name */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div
+                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-base shrink-0 shadow`}
+                  >
+                    {getInitials(name)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-900 truncate group-hover:text-primary-700 transition-colors">
+                      {name}
+                    </p>
+                    <p className="text-xs text-slate-400 truncate">
+                      {emp.user?.email || "—"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Dept + badge */}
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-slate-600 truncate">
+                      {emp.designation || "—"}
+                    </p>
+                    <p className="text-xs text-slate-400 truncate">
+                      {emp.department || "—"}
+                    </p>
+                  </div>
+                  <StatusBadge status={emp.employment_type || "default"} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+          <p className="text-slate-400 text-sm">
+            No employees found{searchTerm ? ` matching "${searchTerm}"` : ""}.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

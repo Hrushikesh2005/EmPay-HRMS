@@ -55,9 +55,13 @@ export default function Topbar() {
             </span>
             <span className="text-xs text-slate-500 mt-1">{roleLabel}</span>
           </div>
-          <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm border border-primary-200 shrink-0">
+          <button
+            onClick={() => navigate("/profile")}
+            title="View My Profile"
+            className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm border border-primary-200 hover:ring-2 hover:ring-primary-400 hover:ring-offset-1 transition-all shrink-0 cursor-pointer"
+          >
             {initials || "U"}
-          </div>
+          </button>
           <button
             onClick={handleLogout}
             className="p-2 text-slate-400 hover:text-danger transition-colors ml-1"

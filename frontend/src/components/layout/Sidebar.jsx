@@ -24,7 +24,7 @@ const ALL_NAV_ITEMS = [
     name: "Directory",
     href: "/directory",
     icon: Users,
-    roles: ["admin", "hr_officer", "payroll_officer", "employee"],
+    roles: ["admin", "hr_officer", "payroll_officer"],
   },
   {
     name: "Attendance",
@@ -94,7 +94,7 @@ export default function Sidebar() {
                 cn(
                   "flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors group",
                   isActive
-                    ? "bg-primary-600/10 text-primary-400"
+                    ? "bg-primary-600 text-white shadow-md"
                     : "text-slate-400 hover:bg-slate-800 hover:text-white",
                 )
               }

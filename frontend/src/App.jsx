@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
-import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import RoleBasedRoute from "./routes/RoleBasedRoute.jsx";
+import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Unauthorized from "./pages/Unauthorized.jsx";
@@ -14,37 +14,22 @@ import Payroll from "./pages/Payroll.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
 import ForcePasswordChange from "./pages/ForcePasswordChange.jsx";
-import useAuth from "./hooks/useAuth.js";
-
-function RootRedirect() {
-  const { isAuthenticated } = useAuth();
-  return <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />;
-}
-
-function LoginRedirect() {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />;
-}
 
 const ALL_ROLES = ["admin", "hr_officer", "payroll_officer", "employee"];
-const HR_ROLES = ["admin", "hr_officer", "employee"];
-const PAYROLL_ROLES = ["admin", "payroll_officer"];
-const ADMIN_HR_PAYROLL = ["admin", "hr_officer", "payroll_officer"];
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<RootRedirect />} />
-        <Route path="/login" element={<LoginRedirect />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route 
-          path="/force-password-change" 
+        <Route
+          path="/force-password-change"
           element={
             <ProtectedRoute skipPasswordCheck>
               <ForcePasswordChange />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Protected Routes Wrapper */}
@@ -58,6 +43,14 @@ function App() {
           {/* Universal Access Modules */}
           <Route element={<RoleBasedRoute allowedRoles={ALL_ROLES} />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route
+              path="/register"
+              element={
+                <ProtectedRoute allowedRoles={["admin"]}>
+                  <Register />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/directory" element={<Directory />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/attendance" element={<Attendance />} />
@@ -77,6 +70,10 @@ function App() {
           
           <Route element={<RoleBasedRoute allowedRoles={ADMIN_HR_PAYROLL} />}>
             <Route path="/reports" element={<Reports />} />
+          </Route>
+
+          <Route element={<RoleBasedRoute allowedRoles={["admin"]} />}>
+            <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>
 

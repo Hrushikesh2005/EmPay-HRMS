@@ -2,20 +2,60 @@ import { useEffect, useState } from "react";
 import { format, differenceInMinutes, parseISO } from "date-fns";
 import { Clock, CheckCircle2, History, Loader2, Calendar, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "../components/ui/PageHeader";
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
-import useAuth from "../hooks/useAuth.js";
-import api from "../api/axios.js";
 import useRealtime from "../hooks/useRealtime.js";
-import { checkIn, checkOut, getMyAttendanceHistory, getMyLeaveBalances } from "../services/attendance";
+import {
+  checkIn,
+  checkOut,
+  getMyAttendanceHistory,
+  getMyLeaveBalances,
+} from "../services/attendance";
 
 const EMPLOYEE_ATTENDANCE = [
-  { id: 1, name: "Dev Nair", status: "present", checkIn: "09:02 AM", checkOut: "--:-- PM", hours: "--", todayStatus: "Checked In" },
-  { id: 2, name: "Priya Kapoor", status: "present", checkIn: "09:15 AM", checkOut: "05:30 PM", hours: "8h 15m", todayStatus: "Checked Out" },
-  { id: 3, name: "Rajesh Kumar", status: "absent", checkIn: "--", checkOut: "--", hours: "--", todayStatus: "Absent" },
-  { id: 4, name: "Sneha Patel", status: "on_leave", checkIn: "--", checkOut: "--", hours: "--", todayStatus: "On Leave" },
+  {
+    id: 1,
+    name: "Dev Nair",
+    status: "present",
+    checkIn: "09:02 AM",
+    checkOut: "--:-- PM",
+    hours: "--",
+    todayStatus: "Checked In",
+  },
+  {
+    id: 2,
+    name: "Priya Kapoor",
+    status: "present",
+    checkIn: "09:15 AM",
+    checkOut: "05:30 PM",
+    hours: "8h 15m",
+    todayStatus: "Checked Out",
+  },
+  {
+    id: 3,
+    name: "Rajesh Kumar",
+    status: "absent",
+    checkIn: "--",
+    checkOut: "--",
+    hours: "--",
+    todayStatus: "Absent",
+  },
+  {
+    id: 4,
+    name: "Sneha Patel",
+    status: "on_leave",
+    checkIn: "--",
+    checkOut: "--",
+    hours: "--",
+    todayStatus: "On Leave",
+  },
 ];
 
 export default function Attendance() {
@@ -30,37 +70,32 @@ export default function Attendance() {
   const [leaveBalances, setLeaveBalances] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  
+
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
 
-  // Live clock ticker
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const loadAttendanceData = async () => {
+    const [historyData, balancesData] = await Promise.all([
+      getMyAttendanceHistory(),
+      getMyLeaveBalances(),
+    ]);
+
+    setHistory(historyData);
+    setLeaveBalances(balancesData);
+
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayEntry = historyData.find(
+      (entry) => entry.work_date === todayStr,
+    );
+
+    setIsCheckedIn(!!todayEntry?.check_in);
+    setIsCheckedOut(!!todayEntry?.check_out);
+  };
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [historyData, balancesData] = await Promise.all([
-        getMyAttendanceHistory(),
-        getMyLeaveBalances()
-      ]);
-      setHistory(historyData);
-      setLeaveBalances(balancesData);
-
-      // Check today's status
-      const todayStr = format(new Date(), "yyyy-MM-dd");
-      const todayEntry = historyData.find(entry => entry.work_date === todayStr);
-      
-      if (todayEntry) {
-        setIsCheckedIn(!!todayEntry.check_in);
-        setIsCheckedOut(!!todayEntry.check_out);
-      } else {
-        setIsCheckedIn(false);
-        setIsCheckedOut(false);
-      }
+      await loadAttendanceData();
     } catch (error) {
       console.error("Failed to load attendance data", error);
     } finally {
@@ -68,17 +103,44 @@ export default function Attendance() {
     }
   };
 
-  // initial fetch
+  // Live clock ticker
   useEffect(() => {
-    fetchData();
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  // subscribe to realtime updates for attendance
+  // Fetch data on mount
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadInitialData = async () => {
+      try {
+        await loadAttendanceData();
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to fetch data:", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadInitialData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Subscribe to realtime updates for attendance
   useRealtime((event) => {
     if (!event) return;
     if (event.type === "attendance") {
-      // refresh attendance when attendance events arrive
-      fetchData();
+      fetchData().catch((err) =>
+        console.error("Failed to refresh attendance:", err),
+      );
     }
   });
 
@@ -109,29 +171,83 @@ export default function Attendance() {
   };
 
   const calculateHours = (checkIn, checkOut) => {
-    if (!checkIn || !checkOut) return '-';
-    try {
-      const mins = differenceInMinutes(parseISO(checkOut), parseISO(checkIn));
-      const hours = Math.floor(mins / 60);
-      const remainingMins = mins % 60;
-      return `${hours}h ${remainingMins}m`;
-    } catch (e) {
-      return '-';
-    }
+    if (!checkIn || !checkOut) return "-";
+    const mins = differenceInMinutes(parseISO(checkOut), parseISO(checkIn));
+    const hours = Math.floor(mins / 60);
+    const remainingMins = mins % 60;
+    return `${hours}h ${remainingMins}m`;
   };
 
   const columns = [
-    { header: "Date", accessor: "work_date", render: (row) => format(parseISO(row.work_date), "dd MMM yyyy") },
-    { header: "Check In", accessor: "check_in", render: (row) => row.check_in ? format(parseISO(row.check_in), "hh:mm a") : '--:--' },
-    { header: "Check Out", accessor: "check_out", render: (row) => row.check_out ? format(parseISO(row.check_out), "hh:mm a") : '--:--' },
-    { header: "Working Hours", accessor: "hours", render: (row) => calculateHours(row.check_in, row.check_out) },
-    { header: "Status", accessor: "status", render: (row) => <StatusBadge status={row.status} /> }
+    {
+      header: "Date",
+      accessor: "work_date",
+      render: (row) => format(parseISO(row.work_date), "dd MMM yyyy"),
+    },
+    {
+      header: "Check In",
+      accessor: "check_in",
+      render: (row) =>
+        row.check_in ? format(parseISO(row.check_in), "hh:mm a") : "--:--",
+    },
+    {
+      header: "Check Out",
+      accessor: "check_out",
+      render: (row) =>
+        row.check_out ? format(parseISO(row.check_out), "hh:mm a") : "--:--",
+    },
+    {
+      header: "Working Hours",
+      accessor: "hours",
+      render: (row) => calculateHours(row.check_in, row.check_out),
+    },
+    {
+      header: "Status",
+      accessor: "status",
+      render: (row) => <StatusBadge status={row.status} />,
+    },
   ];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      <div className="space-y-6">
+        <PageHeader
+          title="Attendance Overview"
+          description="Monitor employee attendance and check-in status across the organization."
+        />
+
+        <Card>
+          <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between py-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-slate-400" />
+              <CardTitle className="text-lg">Employee Attendance</CardTitle>
+            </div>
+            <Button variant="secondary" size="sm">
+              Export CSV
+            </Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            <DataTable
+              columns={[
+                { header: "Employee", accessor: "name" },
+                { header: "Today Status", accessor: "todayStatus" },
+                { header: "Check In", accessor: "checkIn" },
+                { header: "Check Out", accessor: "checkOut" },
+                { header: "Hours", accessor: "hours" },
+                {
+                  header: "Status",
+                  accessor: "status",
+                  render: (row) => <StatusBadge status={row.status} />,
+                },
+              ]}
+              data={EMPLOYEE_ATTENDANCE}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+        </div>
       </div>
     );
   }
@@ -197,16 +313,28 @@ export default function Attendance() {
               {format(currentTime, "hh:mm:ss a")}
             </h2>
             <div className="mt-3 flex items-center gap-2">
-              <StatusBadge status={isCheckedOut ? "checked_out" : isCheckedIn ? "present" : "pending"} />
+              <StatusBadge
+                status={
+                  isCheckedOut
+                    ? "checked_out"
+                    : isCheckedIn
+                      ? "present"
+                      : "pending"
+                }
+              />
               <span className="text-sm text-slate-500">
-                {isCheckedOut ? "You have completed your shift for today." : isCheckedIn ? "You are currently checked in." : "Please mark your attendance."}
+                {isCheckedOut
+                  ? "You have completed your shift."
+                  : isCheckedIn
+                    ? "You are currently checked in."
+                    : "Please mark your attendance."}
               </span>
             </div>
           </div>
-          
+
           <div className="w-full sm:w-auto">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="w-full sm:w-48 text-lg py-6"
               variant={isCheckedIn && !isCheckedOut ? "danger" : "primary"}
               disabled={isCheckedOut || actionLoading}
@@ -215,7 +343,9 @@ export default function Attendance() {
               {actionLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin mx-auto" />
               ) : isCheckedOut ? (
-                <><CheckCircle2 className="mr-2 inline" /> Shift Ended</>
+                <>
+                  <CheckCircle2 className="mr-2 inline" /> Shift Ended
+                </>
               ) : isCheckedIn ? (
                 "Check Out"
               ) : (
@@ -303,24 +433,37 @@ export default function Attendance() {
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {leaveBalances.length === 0 ? (
-            <div className="col-span-full text-slate-500 text-sm">No leave balances found for this year.</div>
-          ) : leaveBalances.map((balance) => (
-            <Card key={balance.id}>
-              <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
-                <span className="text-sm font-medium text-slate-500 mb-1">{balance.leave_type.name}</span>
-                <span className="text-2xl font-bold text-primary-600">
-                  {balance.allocated_days - balance.used_days} <span className="text-sm font-normal text-slate-400">remaining</span>
-                </span>
-                <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3">
-                  <div 
-                    className="bg-primary-500 h-1.5 rounded-full" 
-                    style={{ width: `${(balance.used_days / balance.allocated_days) * 100}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs text-slate-400 mt-1">{balance.used_days} used out of {balance.allocated_days}</span>
-              </CardContent>
-            </Card>
-          ))}
+            <div className="col-span-full text-slate-500 text-sm">
+              No leave balances found for this year.
+            </div>
+          ) : (
+            leaveBalances.map((balance) => (
+              <Card key={balance.id}>
+                <CardContent className="p-4 flex flex-col items-center justify-center text-center h-full">
+                  <span className="text-sm font-medium text-slate-500 mb-1">
+                    {balance.leave_type.name}
+                  </span>
+                  <span className="text-2xl font-bold text-primary-600">
+                    {balance.allocated_days - balance.used_days}{" "}
+                    <span className="text-sm font-normal text-slate-400">
+                      remaining
+                    </span>
+                  </span>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 mt-3">
+                    <div
+                      className="bg-primary-500 h-1.5 rounded-full"
+                      style={{
+                        width: `${(balance.used_days / balance.allocated_days) * 100}%`,
+                      }}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-slate-400 mt-1">
+                    {balance.used_days} used out of {balance.allocated_days}
+                  </span>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </div>
 

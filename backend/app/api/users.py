@@ -2,18 +2,18 @@ import secrets
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_admin, get_current_user
 from app.core.employee_id import generate_employee_code
 from app.models.base import new_uuid
 from app.models.employee import EmployeeProfile
 from app.models.enums import EmploymentType, UserRole
 from app.models.user import User
 from app.schemas.user import UserAdminOut, UserStatusUpdate, UserRoleUpdate
-from app.services.auth_services import hash_password
+from app.services.auth_services import hash_password,verify_password
 from app.services.email_service import send_welcome_email
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -106,6 +106,11 @@ def onboard_employee(
     )
 
 
+class ChangePasswordRequest(BaseModel):
+	current_password: str
+	new_password: str = Field(min_length=8)
+
+
 @router.get("", response_model=list[UserAdminOut])
 def list_users(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     return db.query(User).order_by(User.full_name.asc()).all()
@@ -128,6 +133,27 @@ def update_user_status(
     db.commit()
     db.refresh(user)
     return user
+
+
+
+@router.patch("/{user_id}/change-password")
+def change_password(
+	user_id: str,
+	data: ChangePasswordRequest,
+	db: Session = Depends(get_db),
+	current_user: User = Depends(get_current_user),
+):
+	# Only the account owner can change their own password
+	if current_user.id != user_id:
+		raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only change your own password")
+
+	if not verify_password(data.current_password, current_user.hashed_password):
+		raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+
+	current_user.hashed_password = hash_password(data.new_password)
+	db.commit()
+	return {"message": "Password changed successfully"}
+
 
 
 @router.patch("/{user_id}/role", response_model=UserAdminOut)
