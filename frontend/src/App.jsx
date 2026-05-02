@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
 import Unauthorized from "./pages/Unauthorized.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Directory from "./pages/Directory.jsx";
@@ -33,6 +34,7 @@ function App() {
       <Routes>
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginRedirect />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         <Route
