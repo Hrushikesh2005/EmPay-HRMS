@@ -1,21 +1,24 @@
 from datetime import datetime, timedelta
+
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+
 from app.core.config import settings
 from app.models.base import new_uuid
 from app.models.user import User
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(password: str) -> str:
-	return pwd_context.hash(password)
+	"""Hash password using bcrypt directly."""
+	hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+	return hashed.decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-	return pwd_context.verify(plain, hashed)
+	"""Verify password using bcrypt directly."""
+	return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
 def _create_token(user: User, expires_minutes: int, token_type: str) -> str:

@@ -1,12 +1,21 @@
 from datetime import date
+
+import bcrypt
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
+
 from app.core.database import SessionLocal
 from app.models.base import new_uuid
 from app.models.employee import EmployeeProfile
 from app.models.enums import EmploymentType, UserRole
+from app.models.leave import LeaveType
 from app.models.user import User
-from app.services.auth_services import hash_password
+
+
+def hash_password(password: str) -> str:
+    """Hash password using bcrypt directly (avoids passlib compatibility issues)."""
+    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    return hashed.decode("utf-8")
 
 
 def seed_users(db: Session) -> None:
@@ -59,12 +68,37 @@ def seed_users(db: Session) -> None:
     db.commit()
 
 
+def seed_leave_types(db: Session) -> None:
+    leave_types = [
+        {"name": "Paid Leave", "default_days_per_year": 18, "is_paid": True},
+        {"name": "Sick Leave", "default_days_per_year": 12, "is_paid": True},
+        {"name": "Unpaid Leave", "default_days_per_year": 30, "is_paid": False},
+    ]
+
+    for item in leave_types:
+        existing = db.query(LeaveType).filter(LeaveType.name == item["name"]).first()
+        if existing:
+            print(f"[EXISTS] {item['name']}")
+            continue
+
+        leave_type = LeaveType(
+            id=new_uuid(),
+            name=item["name"],
+            default_days_per_year=item["default_days_per_year"],
+            is_paid=item["is_paid"],
+        )
+        db.add(leave_type)
+        print(f"[SEEDED] {item['name']}")
+
+    db.commit()
+
+
 def main() -> None:
     load_dotenv()
     db = SessionLocal()
     try:
         seed_users(db)
-        print("Seed complete")
+        seed_leave_types(db)
     finally:
         db.close()
 
