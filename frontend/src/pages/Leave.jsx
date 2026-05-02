@@ -89,7 +89,7 @@ const COMPANY_LEAVE_HISTORY = [
 export default function Leave() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
-  const isHR = role === "admin" || role === "hr_officer";
+  const isHR = role === "admin" || role === "hr_officer" || role === "payroll_officer";
   const isEmployee = role === "employee";
 
   const [isModalOpen, setIsModalOpen] = useState(false);
