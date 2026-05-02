@@ -12,8 +12,8 @@ from app.api.auth import router as auth_router
 from app.api.employee import router as employee_router
 from app.api.attendance import router as attendance_router
 from app.api.leave import router as leave_router
-from backend.app.api.leave_types import router as leave_types_router
-from backend.app.api.leave_balances import router as leave_balances_router
+from app.api.leave_types import router as leave_types_router
+from app.api.leave_balances import router as leave_balances_router
 
 app = FastAPI(title="EmPay HRMS API")
 
