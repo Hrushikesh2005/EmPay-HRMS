@@ -17,12 +17,14 @@ function normalizeSession(data = {}) {
   const refreshToken = data.refresh_token || data.refreshToken || null;
   const role = data.role || data.user?.role || null;
   const user = data.user || (data.user_id ? { id: data.user_id, role } : null);
+  const mustChangePassword = user?.must_change_password || false;
 
   return {
     accessToken,
     refreshToken,
     role,
     user,
+    mustChangePassword,
   };
 }
 
@@ -104,6 +106,7 @@ export function AuthProvider({ children }) {
       refreshToken: session.refreshToken,
       user: session.user,
       role,
+      mustChangePassword: session.mustChangePassword,
       isAuthenticated: Boolean(session.accessToken),
       login,
       register,

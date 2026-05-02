@@ -6,7 +6,6 @@ from app.models.enums import EmploymentType, UserRole
 
 class EmployeeProfileCreate(BaseModel):
 	user_id: str
-	manager_id: Optional[str] = None
 	department: Optional[str] = None
 	designation: Optional[str] = None
 	phone: Optional[str] = None
@@ -15,7 +14,6 @@ class EmployeeProfileCreate(BaseModel):
 
 
 class EmployeeProfileUpdate(BaseModel):
-	manager_id: Optional[str] = None
 	department: Optional[str] = None
 	designation: Optional[str] = None
 	phone: Optional[str] = None
@@ -35,8 +33,8 @@ class EmployeeUserOut(BaseModel):
 
 class EmployeeProfileOut(BaseModel):
 	id: str
+	employee_code: Optional[str]
 	user_id: str
-	manager_id: Optional[str]
 	department: Optional[str]
 	designation: Optional[str]
 	phone: Optional[str]

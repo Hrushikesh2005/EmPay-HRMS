@@ -5,6 +5,9 @@ import {
   Settings as SettingsIcon,
   ToggleLeft,
   ToggleRight,
+  Lock,
+  Shield,
+  AlertCircle,
 } from "lucide-react";
 import { PageHeader } from "../components/ui/PageHeader";
 import {
@@ -14,6 +17,7 @@ import {
   CardContent,
 } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
 import { DataTable } from "../components/ui/DataTable";
 import api from "../api/axios.js";
 import useAuth from "../hooks/useAuth.js";
@@ -37,11 +41,13 @@ function StatusPill({ active }) {
 export default function Settings() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
+  
+  // User Management State (Admin only)
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
-  const [error, setError] = useState("");
+  const [usersError, setUsersError] = useState("");
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -51,14 +57,14 @@ export default function Settings() {
     async function loadUsers() {
       try {
         setLoading(true);
-        setError("");
+        setUsersError("");
         const response = await api.get("/users");
         if (isMounted) {
           setUsers(response.data || []);
         }
       } catch (requestError) {
         if (isMounted) {
-          setError(
+          setUsersError(
             requestError?.response?.data?.detail || "Failed to load users.",
           );
         }
@@ -75,24 +81,6 @@ export default function Settings() {
       isMounted = false;
     };
   }, [isAdmin]);
-
-  if (!isAdmin) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Access Denied"
-          description="Settings section is available only to administrators."
-        />
-        <Card>
-          <CardContent className="p-8">
-            <p className="text-slate-600">
-              Only admins can access the Settings section.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const handleToggleStatus = async (user) => {
     try {
@@ -127,11 +115,7 @@ export default function Settings() {
     {
       header: "Role",
       accessor: "role",
-      render: (row) => (
-        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full capitalize">
-          {formatRole(row.role)}
-        </span>
-      ),
+      render: (row) => (row.role ? row.role.replace("_", " ") : ""),
     },
     {
       header: "Status",
@@ -149,35 +133,31 @@ export default function Settings() {
           onClick={() => handleToggleStatus(row)}
           disabled={savingId === row.id}
         >
-          {row.is_active ? (
-            <>
-              <ToggleLeft className="w-4 h-4 mr-2" /> Deactivate
-            </>
-          ) : (
-            <>
-              <ToggleRight className="w-4 h-4 mr-2" /> Activate
-            </>
-          )}
+          {row.is_active ? "Deactivate" : "Activate"}
         </Button>
       ),
     },
   ];
 
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="User Status Management"
-        description="Activate or deactivate users. Inactive users cannot log in to the portal."
+        title="Settings"
+        description="Manage user access and system preferences."
       />
 
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="p-6 flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-slate-900 mb-1">Admin Control</h3>
+            <h3 className="font-semibold text-slate-900 mb-1">User Access Management</h3>
             <p className="text-sm text-slate-600">
-              Switching a user to inactive immediately blocks future logins and
-              authenticated requests for that account.
+              Control which employees have access to the HRMS portal. 
+              Deactivating a user blocks their login immediately.
             </p>
           </div>
         </CardContent>
@@ -190,7 +170,7 @@ export default function Settings() {
             <input
               type="text"
               className="flex-1 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="Search users by name or email..."
+              placeholder="Search users..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
             />
@@ -198,19 +178,11 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {error ? (
-        <Card>
-          <CardContent className="p-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl">
-            {error}
-          </CardContent>
-        </Card>
-      ) : null}
-
       <Card>
         <CardHeader className="border-b border-slate-100">
           <CardTitle className="flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5" />
-            Users ({filteredUsers.length})
+            <SettingsIcon className="w-5 h-5 text-slate-400" />
+            All Users ({filteredUsers.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">

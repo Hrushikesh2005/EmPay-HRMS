@@ -1,9 +1,12 @@
-import React from "react";
+// React import not required with automatic JSX runtime
 import useAuth from "../hooks/useAuth.js";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
 import { StatCard } from "../components/ui/StatCard";
 import { Users, Clock, Calendar, CheckCircle, CreditCard } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import api from "../api/axios.js";
+import useRealtime from "../hooks/useRealtime.js";
+import { useEffect, useState } from "react";
 
 const MOCK_ATTENDANCE_DATA = [
   { name: 'Mon', present: 12, absent: 1 },
@@ -15,6 +18,23 @@ const MOCK_ATTENDANCE_DATA = [
 
 export default function Dashboard() {
   const { user, isLoading } = useAuth();
+  const [balances, setBalances] = useState([]);
+
+  const fetchBalances = () => {
+    api
+      .get("/leave-balances/me")
+      .then((r) => setBalances(r.data || []))
+      .catch((e) => console.error(e));
+  };
+
+  useEffect(() => {
+    if (user?.role === "employee") fetchBalances();
+  }, [user]);
+
+  useRealtime((ev) => {
+    if (!ev) return;
+    if (ev.type === "leave_request") fetchBalances();
+  });
 
   if (isLoading) {
     return <div className="text-slate-500">Loading dashboard...</div>;
@@ -38,6 +58,35 @@ export default function Dashboard() {
             <div><span className="text-slate-500">Email:</span> {user.email}</div>
             <div><span className="text-slate-500">Role:</span> {user.role}</div>
           </div>
+        </div>
+      )}
+
+      {role === "employee" && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            title="Total Allocated"
+            value={
+              balances.reduce((acc, b) => acc + Number(b.allocated_days || 0), 0)
+            }
+            icon={Calendar}
+            color="primary"
+          />
+          <StatCard
+            title="Used Leaves"
+            value={
+              balances.reduce((acc, b) => acc + Number(b.used_days || 0), 0)
+            }
+            icon={CheckCircle}
+            color="warning"
+          />
+          <StatCard
+            title="Remaining"
+            value={
+              balances.reduce((acc, b) => acc + Number(b.remaining_days || 0), 0)
+            }
+            icon={Calendar}
+            color="success"
+          />
         </div>
       )}
 

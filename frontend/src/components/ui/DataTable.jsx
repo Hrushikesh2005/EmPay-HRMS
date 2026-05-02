@@ -36,7 +36,7 @@ export function DataTable({
                 ))}
               </tr>
             ))
-          ) : (
+          ) : emptyMessage ? (
             <tr>
               <td
                 colSpan={columns.length}
@@ -45,7 +45,7 @@ export function DataTable({
                 {emptyMessage}
               </td>
             </tr>
-          )}
+          ) : null}
         </tbody>
       </table>
     </div>

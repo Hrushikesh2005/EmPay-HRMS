@@ -14,6 +14,7 @@ class UserLoginData(BaseModel):
 	email: EmailStr
 	full_name: str
 	role: UserRole
+	must_change_password: bool
 
 	class Config:
 		from_attributes = True
@@ -37,6 +38,12 @@ class UserOut(BaseModel):
 	email: EmailStr
 	role: UserRole
 	is_active: bool
+	must_change_password: bool
 
 	class Config:
 		from_attributes = True
+
+
+class ChangePasswordRequest(BaseModel):
+	old_password: str
+	new_password: str = Field(min_length=8)

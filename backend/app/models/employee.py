@@ -8,8 +8,8 @@ class EmployeeProfile(Base, TimestampMixin):
     __tablename__ = "employee_profiles"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    employee_code: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True, index=True)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    manager_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("employee_profiles.id", ondelete="SET NULL"), nullable=True)
     department: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     designation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
@@ -17,7 +17,6 @@ class EmployeeProfile(Base, TimestampMixin):
     employment_type: Mapped[EmploymentType] = mapped_column(Enum(EmploymentType), nullable=False, default=EmploymentType.full_time)
 
     user = relationship("User", back_populates="profile")
-    manager = relationship("EmployeeProfile", remote_side="EmployeeProfile.id", foreign_keys=[manager_id])
     salary_structures = relationship("SalaryStructure", back_populates="employee")
     attendance_logs = relationship("AttendanceLog", back_populates="employee")
     leave_balances = relationship("LeaveBalance", back_populates="employee")

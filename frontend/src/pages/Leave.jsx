@@ -70,11 +70,10 @@ function StatusTabs({ active, onChange }) {
         <button
           key={s}
           onClick={() => onChange(s)}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors capitalize ${
-            active === s
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors capitalize ${active === s
               ? "bg-primary-600 text-white shadow-sm"
               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
+            }`}
         >
           {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
         </button>
@@ -136,9 +135,8 @@ function ApplyLeaveModal({ isOpen, onClose, leaveTypes, onSuccess }) {
           </label>
           <div className="relative">
             <select
-              className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
-                errors.leave_type_id ? "border-red-400" : "border-slate-300"
-              }`}
+              className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.leave_type_id ? "border-red-400" : "border-slate-300"
+                }`}
               {...register("leave_type_id", { required: "Please select a leave type" })}
             >
               <option value="">Select leave type…</option>

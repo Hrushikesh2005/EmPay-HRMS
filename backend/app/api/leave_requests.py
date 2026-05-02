@@ -55,7 +55,6 @@ def cancel_own_leave_request(
     return cancel_leave_request(db, request_id, profile.id)
 
 
-# --- New additions for payroll review ---
 @router.get("/", response_model=list[LeaveRequestResponse])
 def list_all_leave_requests(
     request_status: LeaveRequestStatus | None = Query(default=None, alias="status"),

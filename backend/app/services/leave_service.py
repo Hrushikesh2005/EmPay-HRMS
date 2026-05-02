@@ -43,6 +43,30 @@ def apply_leave(user: User, data, db: Session) -> LeaveRequest:
 	db.add(request)
 	db.commit()
 	db.refresh(request)
+	# send realtime update to the requester (fire-and-forget)
+	try:
+		import asyncio
+		from app.api.realtime import manager
+
+		payload = {
+			"type": "leave_request",
+			"action": "created",
+			"data": {
+				"id": request.id,
+				"employee_id": request.employee_id,
+				"leave_type_id": request.leave_type_id,
+				"start_date": request.start_date.isoformat(),
+				"end_date": request.end_date.isoformat(),
+				"total_days": request.total_days,
+				"status": request.status.name if hasattr(request.status, 'name') else str(request.status),
+				"reason": request.reason,
+			},
+		}
+		# try send to the owner's connections
+		asyncio.create_task(manager.send_personal_message(user.id, payload))
+	except Exception:
+		pass
+
 	return request
 
 
