@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { format, differenceInMinutes, parseISO } from "date-fns";
-import { Clock, CheckCircle2, History, Loader2, Calendar, Users } from "lucide-react";
+import { Clock, CheckCircle2, History, Loader2, Calendar, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -20,9 +20,12 @@ const EMPLOYEE_ATTENDANCE = [
 
 export default function Attendance() {
   const { role } = useAuth();
-  const isAdminOrHr = role === 'admin' || role === 'hr_officer';
+  const isAdmin = role === 'admin';
+  const isPrivilegeView = role === 'admin' || role === 'hr_officer' || role === 'payroll_officer';
   
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [selectedMonthDate, setSelectedMonthDate] = useState(new Date());
+  const [selectedDailyDate, setSelectedDailyDate] = useState(new Date());
   const [history, setHistory] = useState([]);
   const [leaveBalances, setLeaveBalances] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -133,15 +136,58 @@ export default function Attendance() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <PageHeader 
-        title="Attendance Tracking" 
-        description="Mark your daily attendance, view your monthly timesheet, and track your leaves."
-      />
+  const presentCount = history.filter(h => h.status === 'present' || h.status === 'half_day').length;
+  const leavesCount = history.filter(h => h.status === 'on_leave').length;
+  const totalWorkingDays = history.length;
 
-      {/* Action Banner */}
+  const handlePrevMonth = () => {
+    setSelectedMonthDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() - 1);
+      return newDate;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setSelectedMonthDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() + 1);
+      return newDate;
+    });
+  };
+
+  const adminColumns = [
+    { header: "Emp", accessor: "name" },
+    { header: "Check In", accessor: "checkIn", render: (row) => row.checkIn.replace(/ AM| PM/g, '') },
+    { header: "Check Out", accessor: "checkOut", render: (row) => row.checkOut.replace(/ AM| PM/g, '') },
+    { header: "Work Hours", accessor: "hours" },
+    { header: "Extra hours", accessor: "extra_hours", render: (row) => row.extra_hours || "-" }
+  ];
+
+  const handlePrevDay = () => {
+    setSelectedDailyDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(newDate.getDate() - 1);
+      return newDate;
+    });
+  };
+
+  const handleNextDay = () => {
+    setSelectedDailyDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(newDate.getDate() + 1);
+      return newDate;
+    });
+  };
+
+  const renderActionBanner = () => {
+    if (isAdmin) return null;
+
+    return (
       <Card className="bg-primary-50 border-primary-100 shadow-sm overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+          <Clock className="w-32 h-32 text-primary-900" />
+        </div>
         <CardContent className="p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
           <div>
             <p className="text-sm font-semibold text-primary-600 uppercase tracking-wider mb-1">
@@ -179,6 +225,75 @@ export default function Attendance() {
           </div>
         </CardContent>
       </Card>
+    );
+  };
+
+  if (isPrivilegeView) {
+    return (
+      <div className="space-y-6">
+        <PageHeader 
+          title="Attendances" 
+          description={isAdmin ? "View and monitor daily employee attendance." : "Mark your attendance and monitor daily employee attendance."}
+        />
+
+        {renderActionBanner()}
+
+        <Card>
+          <CardHeader className="border-b border-slate-100 flex flex-col sm:flex-row items-center py-4 gap-4">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handlePrevDay} className="h-9 w-9" title="Previous Day">
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={handleNextDay} className="h-9 w-9" title="Next Day">
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <input 
+                type="date"
+                value={format(selectedDailyDate, "yyyy-MM-dd")}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setSelectedDailyDate(new Date(e.target.value));
+                  }
+                }}
+                className="px-3 py-1.5 h-9 border border-slate-200 rounded-md text-sm font-medium bg-white text-slate-700 outline-none focus:ring-2 focus:ring-primary-500"
+              />
+              <div className="px-3 py-1.5 h-9 border border-slate-200 rounded-md text-sm font-medium bg-slate-50 text-slate-700 flex items-center min-w-[100px] justify-center">
+                {format(selectedDailyDate, "EEEE")}
+              </div>
+            </div>
+            
+            <div className="ml-auto w-full sm:w-64">
+              <input 
+                type="text" 
+                placeholder="Searchbar" 
+                className="w-full px-3 py-1.5 h-9 border border-slate-200 rounded-md text-sm bg-white text-slate-700 outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </CardHeader>
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center bg-slate-50/50">
+            <h3 className="text-slate-800 font-semibold">{format(selectedDailyDate, "dd, MMMM yyyy")}</h3>
+          </div>
+          <CardContent className="p-0">
+            <DataTable
+              columns={adminColumns}
+              data={EMPLOYEE_ATTENDANCE}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader 
+        title="Attendance Tracking" 
+        description="Mark your daily attendance, view your monthly timesheet, and track your leaves."
+      />
+
+      {renderActionBanner()}
 
       {/* Leave Balances Grid */}
       <div>
@@ -209,15 +324,74 @@ export default function Attendance() {
         </div>
       </div>
 
-      {/* Monthly grid/History */}
+      {/* Monthly grid/History with Wireframe Layout */}
       <Card>
-        <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between py-4">
-          <div className="flex items-center gap-2">
-            <History className="w-5 h-5 text-slate-400" />
-            <CardTitle className="text-lg">Monthly Timeline</CardTitle>
+        <CardHeader className="border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between py-4 gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handlePrevMonth} className="h-9 w-9" title="Previous Month">
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={handleNextMonth} className="h-9 w-9" title="Next Month">
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+            <select 
+              value={selectedMonthDate.getMonth()}
+              onChange={(e) => {
+                const newDate = new Date(selectedMonthDate);
+                newDate.setMonth(parseInt(e.target.value, 10));
+                setSelectedMonthDate(newDate);
+              }}
+              className="px-3 py-1.5 h-9 border border-slate-200 rounded-md text-sm font-medium bg-white text-slate-700 outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value={0}>Jan</option>
+              <option value={1}>Feb</option>
+              <option value={2}>Mar</option>
+              <option value={3}>Apr</option>
+              <option value={4}>May</option>
+              <option value={5}>Jun</option>
+              <option value={6}>Jul</option>
+              <option value={7}>Aug</option>
+              <option value={8}>Sep</option>
+              <option value={9}>Oct</option>
+              <option value={10}>Nov</option>
+              <option value={11}>Dec</option>
+            </select>
+            <select 
+              value={selectedMonthDate.getFullYear()}
+              onChange={(e) => {
+                const newDate = new Date(selectedMonthDate);
+                newDate.setFullYear(parseInt(e.target.value, 10));
+                setSelectedMonthDate(newDate);
+              }}
+              className="px-3 py-1.5 h-9 border border-slate-200 rounded-md text-sm font-medium bg-white text-slate-700 outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              {[...Array(5)].map((_, i) => {
+                const year = new Date().getFullYear() - 2 + i;
+                return <option key={year} value={year}>{year}</option>;
+              })}
+            </select>
           </div>
-          <Button variant="secondary" size="sm">Export CSV</Button>
+          
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <div className="flex-1 sm:flex-none flex flex-col items-center bg-slate-50 px-4 py-1.5 rounded-lg border border-slate-200 min-w-[120px]">
+              <span className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Count of days present</span>
+              <span className="text-lg font-bold text-slate-800">{presentCount}</span>
+            </div>
+            <div className="flex-1 sm:flex-none flex flex-col items-center bg-slate-50 px-4 py-1.5 rounded-lg border border-slate-200 min-w-[120px]">
+              <span className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Leaves count</span>
+              <span className="text-lg font-bold text-slate-800">{leavesCount}</span>
+            </div>
+            <div className="flex-1 sm:flex-none flex flex-col items-center bg-slate-50 px-4 py-1.5 rounded-lg border border-slate-200 min-w-[120px]">
+              <span className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Total working days</span>
+              <span className="text-lg font-bold text-slate-800">{totalWorkingDays}</span>
+            </div>
+          </div>
         </CardHeader>
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center bg-slate-50/50">
+          <h3 className="text-slate-800 font-semibold">{format(new Date(), "dd, MMMM yyyy")}</h3>
+        </div>
         <CardContent className="p-0">
           <DataTable columns={columns} data={history} emptyMessage={null} />
         </CardContent>

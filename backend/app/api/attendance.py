@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.dependencies import require_roles
+from app.core.dependencies import require_roles, get_current_user
 from app.schemas.attendance import AttendanceCheckRequest, AttendanceOut
 from app.services.attendance_service import check_in, check_out, get_employee_attendance, get_all_attendance
 from datetime import date
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/attendance", tags=["Attendance"])
 def mark_check_in(
 	data: AttendanceCheckRequest,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles("employee", "admin")),
+	current_user: User = Depends(get_current_user),
 ):
 	return check_in(current_user, data.remarks, db)
 
@@ -25,7 +25,7 @@ def mark_check_in(
 def mark_check_out(
 	data: AttendanceCheckRequest,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles("employee", "admin")),
+	current_user: User = Depends(get_current_user),
 ):
 	return check_out(current_user, data.remarks, db)
 
@@ -35,7 +35,7 @@ def get_my_history(
 	start_date: Optional[date] = None,
 	end_date: Optional[date] = None,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles("employee", "admin")),
+	current_user: User = Depends(get_current_user),
 ):
 	return get_employee_attendance(current_user, db, start_date, end_date)
 
@@ -46,7 +46,7 @@ def get_all_history(
 	end_date: Optional[date] = None,
 	employee_id: Optional[str] = None,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles("hr_officer", "admin")),
+	current_user: User = Depends(require_roles("hr_officer", "admin", "payroll_officer")),
 ):
 	return get_all_attendance(db, start_date, end_date, employee_id)
 
@@ -54,6 +54,6 @@ def get_all_history(
 @router.get("/me", response_model=list[AttendanceOut])
 def my_attendance(
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles("employee", "admin")),
+	current_user: User = Depends(get_current_user),
 ):
 	return list_my_attendance(current_user, db)
