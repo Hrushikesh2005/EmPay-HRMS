@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
 import { Calendar, Check, X, FileText, BarChart3 } from "lucide-react";
+import useAuth from "../hooks/useAuth.js";
 import { PageHeader } from "../components/ui/PageHeader";
 import {
   Card,
