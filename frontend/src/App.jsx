@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
-import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import RoleBasedRoute from "./routes/RoleBasedRoute.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -39,16 +38,16 @@ function App() {
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginRedirect />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route
-          path="/force-password-change"
+        <Route 
+          path="/force-password-change" 
           element={
             <ProtectedRoute skipPasswordCheck>
               <ForcePasswordChange />
             </ProtectedRoute>
-          }
+          } 
         />
 
-        {/* Protected Routes */}
+        {/* Protected Routes Wrapper */}
         <Route
           element={
             <ProtectedRoute>
@@ -56,87 +55,33 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* Universal Access */}
+          {/* Universal Access Modules */}
           <Route element={<RoleBasedRoute allowedRoles={ALL_ROLES} />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route
-              path="/directory"
-              element={
-                <ProtectedRoute allowedRoles={ALL_ROLES}>
-                  <Directory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/attendance"
-              element={
-                <ProtectedRoute allowedRoles={HR_ROLES}>
-                  <Attendance />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/leave"
-              element={
-                <ProtectedRoute allowedRoles={ALL_ROLES}>
-                  <Leave />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute allowedRoles={ALL_ROLES}>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/payroll"
-              element={
-                <ProtectedRoute allowedRoles={PAYROLL_ROLES}>
-                  <Payroll />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <Register />
-                </ProtectedRoute>
-              }
-            />
             <Route path="/directory" element={<Directory />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/attendance" element={<Attendance />} />
+            <Route path="/leave" element={<Leave />} />
           </Route>
 
-          {/* Admin Only */}
+          {/* Admin Specific Modules */}
           <Route element={<RoleBasedRoute allowedRoles={["admin"]} />}>
             <Route path="/register" element={<Register />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
 
-          {/* Employee & HR (Attendance/Leave) */}
-          <Route element={<RoleBasedRoute allowedRoles={ALL_ROLES} />}>
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/leave" element={<Leave />} />
-          </Route>
-
-          {/* Payroll Specialist Roles */}
+          {/* Specialized Modules */}
           <Route element={<RoleBasedRoute allowedRoles={PAYROLL_ROLES} />}>
-            {/* Payroll Specialist Roles */}
-            <Route element={<RoleBasedRoute allowedRoles={PAYROLL_ROLES} />}>
-              <Route path="/payroll" element={<Payroll />} />
-            </Route>
-
-            {/* Internal Staff Roles (Reports) */}
-            <Route element={<RoleBasedRoute allowedRoles={ADMIN_HR_PAYROLL} />}>
-              <Route path="/reports" element={<Reports />} />
-            </Route>
+            <Route path="/payroll" element={<Payroll />} />
           </Route>
+          
+          <Route element={<RoleBasedRoute allowedRoles={ADMIN_HR_PAYROLL} />}>
+            <Route path="/reports" element={<Reports />} />
+          </Route>
+        </Route>
 
-          <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

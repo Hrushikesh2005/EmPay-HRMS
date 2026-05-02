@@ -1,23 +1,3 @@
-<<<<<<< HEAD
-import { useEffect } from "react";
-
-export default function useRealtime(onEvent) {
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof onEvent !== "function") {
-      return undefined;
-    }
-
-    const handleRealtimeEvent = (event) => {
-      onEvent(event.detail ?? null);
-    };
-
-    window.addEventListener("realtime", handleRealtimeEvent);
-
-    return () => {
-      window.removeEventListener("realtime", handleRealtimeEvent);
-    };
-  }, [onEvent]);
-=======
 import { useEffect, useRef } from "react";
 import { clearSessionTokens } from "../api/axios.js";
 
@@ -72,5 +52,4 @@ export default function useRealtime(onMessage) {
       // fail silently
     }
   }, [onMessage]);
->>>>>>> b137b3b3da9b0ac9ee3940c16f2e744a6234e5c9
 }
