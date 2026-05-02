@@ -115,6 +115,15 @@ def check_out(user: User, remarks: str | None, db: Session) -> AttendanceLog:
 
 	return attendance
 
+def list_my_attendance(user: User, db: Session) -> list[AttendanceLog]:
+	profile = _get_employee_profile(user, db)
+	return (
+		db.query(AttendanceLog)
+		.filter(AttendanceLog.employee_id == profile.id)
+		.order_by(AttendanceLog.work_date.desc())
+		.all()
+	)
+
 
 def get_employee_attendance(user: User, db: Session, start_date: date | None = None, end_date: date | None = None) -> list[AttendanceLog]:
 	profile = _get_employee_profile(user, db)

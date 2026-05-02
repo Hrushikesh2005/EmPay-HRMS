@@ -54,6 +54,6 @@ def get_all_history(
 @router.get("/me", response_model=list[AttendanceOut])
 def my_attendance(
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles("employee")),
+	current_user: User = Depends(require_roles("employee", "admin")),
 ):
 	return list_my_attendance(current_user, db)

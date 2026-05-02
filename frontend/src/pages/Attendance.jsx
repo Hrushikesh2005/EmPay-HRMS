@@ -30,57 +30,11 @@ export default function Attendance() {
   
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
-  const [attendanceHistory, setAttendanceHistory] = useState(ATTENDANCE_HISTORY);
-
-  const fetchAttendance = () => {
-    api
-      .get("/attendance/me")
-      .then((res) => {
-        const data = res.data || [];
-        setAttendanceHistory(
-          data.map((d, idx) => ({
-            id: d.id || idx,
-            date: d.work_date,
-            checkIn: d.check_in ? new Date(d.check_in).toLocaleTimeString() : "--:--",
-            checkOut: d.check_out ? new Date(d.check_out).toLocaleTimeString() : "--:--",
-            hours: "-",
-            status: d.status,
-          })),
-        );
-
-        if (data.length > 0) {
-          const today = data.find((r) => new Date(r.work_date).toDateString() === new Date().toDateString());
-          if (today) {
-            setIsCheckedIn(!!today.check_in);
-            setIsCheckedOut(!!today.check_out);
-          }
-        }
-      })
-      .catch((e) => console.error(e));
-  };
 
   // Live clock ticker
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
-  }, []);
-
-  // initial fetch
-  useEffect(() => {
-    fetchAttendance();
-  }, []);
-
-  // subscribe to realtime updates for attendance
-  useRealtime((event) => {
-    if (!event) return;
-    if (event.type === "attendance") {
-      // refresh attendance when attendance events arrive
-      fetchAttendance();
-    }
-  });
-
-  useEffect(() => {
-    fetchData();
   }, []);
 
   const fetchData = async () => {
@@ -98,8 +52,11 @@ export default function Attendance() {
       const todayEntry = historyData.find(entry => entry.work_date === todayStr);
       
       if (todayEntry) {
-        if (todayEntry.check_in) setIsCheckedIn(true);
-        if (todayEntry.check_out) setIsCheckedOut(true);
+        setIsCheckedIn(!!todayEntry.check_in);
+        setIsCheckedOut(!!todayEntry.check_out);
+      } else {
+        setIsCheckedIn(false);
+        setIsCheckedOut(false);
       }
     } catch (error) {
       console.error("Failed to load attendance data", error);
@@ -107,6 +64,20 @@ export default function Attendance() {
       setLoading(false);
     }
   };
+
+  // initial fetch
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // subscribe to realtime updates for attendance
+  useRealtime((event) => {
+    if (!event) return;
+    if (event.type === "attendance") {
+      // refresh attendance when attendance events arrive
+      fetchData();
+    }
+  });
 
   const handleCheckIn = async () => {
     try {
@@ -136,27 +107,13 @@ export default function Attendance() {
 
   const calculateHours = (checkIn, checkOut) => {
     if (!checkIn || !checkOut) return '-';
-    const mins = differenceInMinutes(parseISO(checkOut), parseISO(checkIn));
-    const hours = Math.floor(mins / 60);
-    const remainingMins = mins % 60;
-    return `${hours}h ${remainingMins}m`;
-  const handleCheckInOut = () => {
-    if (!isCheckedIn) {
-      api
-        .post("/attendance/checkin", { remarks: null })
-        .then(() => {
-          setIsCheckedIn(true);
-          fetchAttendance();
-        })
-        .catch((e) => console.error(e));
-    } else {
-      api
-        .post("/attendance/checkout", { remarks: null })
-        .then(() => {
-          setIsCheckedOut(true);
-          fetchAttendance();
-        })
-        .catch((e) => console.error(e));
+    try {
+      const mins = differenceInMinutes(parseISO(checkOut), parseISO(checkIn));
+      const hours = Math.floor(mins / 60);
+      const remainingMins = mins % 60;
+      return `${hours}h ${remainingMins}m`;
+    } catch (e) {
+      return '-';
     }
   };
 
