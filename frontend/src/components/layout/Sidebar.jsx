@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+﻿import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -29,13 +29,13 @@ const ALL_NAV_ITEMS = [
     name: "Attendance",
     href: "/attendance",
     icon: Clock,
-    roles: ["admin", "hr_officer", "employee"],
+    roles: ["admin", "hr_officer", "payroll_officer", "employee"],
   },
   {
     name: "Leave",
     href: "/leave",
     icon: Calendar,
-    roles: ["admin", "hr_officer", "employee"],
+    roles: ["admin", "hr_officer", "payroll_officer", "employee"],
   },
   {
     name: "Payroll",
@@ -47,9 +47,14 @@ const ALL_NAV_ITEMS = [
     name: "Reports",
     href: "/reports",
     icon: BarChart3,
+    roles: ["admin", "hr_officer", "payroll_officer"],
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
     roles: ["admin"],
   },
-  { name: "Settings", href: "/settings", icon: Settings, roles: ["admin"] },
 ];
 
 export default function Sidebar() {
