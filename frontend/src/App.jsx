@@ -15,7 +15,6 @@ import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
 import ForcePasswordChange from "./pages/ForcePasswordChange.jsx";
 
-const ALL_ROLES = ["admin", "hr_officer", "payroll_officer", "employee"];
 
 function App() {
   return (
@@ -32,7 +31,7 @@ function App() {
           }
         />
 
-        {/* Protected Routes Wrapper */}
+        {/* Main Application Shell */}
         <Route
           element={
             <ProtectedRoute>
@@ -40,45 +39,49 @@ function App() {
             </ProtectedRoute>
           }
         >
-          {/* Universal Access Modules */}
-          <Route element={<RoleBasedRoute allowedRoles={ALL_ROLES} />}>
+          {/* Dashboard */}
+          <Route element={<RoleBasedRoute module="dashboard" />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route
-              path="/register"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <Register />
-                </ProtectedRoute>
-              }
-            />
+          </Route>
+
+          {/* Directory & Onboarding */}
+          <Route element={<RoleBasedRoute module="directory" />}>
             <Route path="/directory" element={<Directory />} />
             <Route path="/profile" element={<Profile />} />
+          </Route>
+          <Route element={<RoleBasedRoute module="directory" action="edit" />}>
+            <Route path="/register" element={<Register />} />
+          </Route>
+
+          {/* Attendance */}
+          <Route element={<RoleBasedRoute module="attendance" />}>
             <Route path="/attendance" element={<Attendance />} />
+          </Route>
+
+          {/* Leave */}
+          <Route element={<RoleBasedRoute module="leave" />}>
             <Route path="/leave" element={<Leave />} />
           </Route>
 
-          {/* Admin Specific Modules */}
-          <Route element={<RoleBasedRoute allowedRoles={["admin"]} />}>
-            <Route path="/register" element={<Register />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-
-          {/* Specialized Modules */}
-          <Route element={<RoleBasedRoute allowedRoles={PAYROLL_ROLES} />}>
+          {/* Payroll */}
+          <Route element={<RoleBasedRoute module="payroll" />}>
             <Route path="/payroll" element={<Payroll />} />
           </Route>
-          
-          <Route element={<RoleBasedRoute allowedRoles={ADMIN_HR_PAYROLL} />}>
+
+          {/* Reports */}
+          <Route element={<RoleBasedRoute module="reports" />}>
             <Route path="/reports" element={<Reports />} />
           </Route>
 
-          <Route element={<RoleBasedRoute allowedRoles={["admin"]} />}>
+          {/* Settings */}
+          <Route element={<RoleBasedRoute module="settings" />}>
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Route>
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

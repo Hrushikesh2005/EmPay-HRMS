@@ -3,10 +3,9 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
-from app.dependencies.auth import get_current_user, require_roles
+from app.core.database import get_db
+from app.core.dependencies import get_current_user, require_roles
 from app.models.employee import EmployeeProfile
-from app.models.enums import UserRole
 from app.models.user import User
 from app.schemas.leave_balance import LeaveBalanceCreate, LeaveBalanceResponse, LeaveBalanceUpdate
 from app.services.leave_balance_service import allocate_leave, get_balances_for_employee, update_allocation
@@ -18,7 +17,7 @@ router = APIRouter(prefix="/leave-balances", tags=["Leave Balances"])
 def allocate_leave_route(
 	data: LeaveBalanceCreate,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles(UserRole.hr_officer, UserRole.admin)),
+	current_user: User = Depends(require_roles("hr_officer", "admin")),
 ) -> LeaveBalanceResponse:
 	return allocate_leave(db, data)
 
@@ -40,7 +39,7 @@ def my_balances(
 def employee_balances(
 	employee_id: str,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles(UserRole.hr_officer, UserRole.payroll_officer, UserRole.admin)),
+	current_user: User = Depends(require_roles("hr_officer", "payroll_officer", "admin")),
 ) -> list[LeaveBalanceResponse]:
 	year = date.today().year
 	return get_balances_for_employee(db, employee_id, year)
@@ -51,6 +50,6 @@ def update_leave_allocation_route(
 	balance_id: str,
 	data: LeaveBalanceUpdate,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles(UserRole.hr_officer, UserRole.admin)),
+	current_user: User = Depends(require_roles("hr_officer", "admin")),
 ) -> LeaveBalanceResponse:
 	return update_allocation(db, balance_id, data)

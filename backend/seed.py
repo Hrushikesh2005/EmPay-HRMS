@@ -70,8 +70,8 @@ def seed_users(db: Session) -> None:
 
 def seed_leave_types(db: Session) -> None:
     leave_types = [
-        {"name": "Paid Leave", "default_days_per_year": 18, "is_paid": True},
-        {"name": "Sick Leave", "default_days_per_year": 12, "is_paid": True},
+        {"name": "Paid Leave", "default_days_per_year": 20, "is_paid": True},
+        {"name": "Sick Leave", "default_days_per_year": 10, "is_paid": True},
         {"name": "Unpaid Leave", "default_days_per_year": 30, "is_paid": False},
     ]
 

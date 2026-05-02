@@ -12,6 +12,7 @@ class LeaveRequestCreate(BaseModel):
     start_date: date
     end_date: date
     reason: str | None = None
+    employee_id: str | None = None
 
     @model_validator(mode="after")
     def validate_date_range(self):

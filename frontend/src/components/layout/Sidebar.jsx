@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -14,63 +15,29 @@ import { cn } from "../../utils/cn";
 import useAuth from "../../hooks/useAuth.js";
 
 const ALL_NAV_ITEMS = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-    roles: ["admin", "hr_officer", "payroll_officer", "employee"],
-  },
-  {
-    name: "Directory",
-    href: "/directory",
-    icon: Users,
-    roles: ["admin", "hr_officer", "payroll_officer"],
-  },
-  {
-    name: "Attendance",
-    href: "/attendance",
-    icon: Clock,
-    roles: ["admin", "hr_officer", "payroll_officer", "employee"],
-  },
-  {
-    name: "Leave",
-    href: "/leave",
-    icon: Calendar,
-    roles: ["admin", "hr_officer", "payroll_officer", "employee"],
-  },
-  {
-    name: "Payroll",
-    href: "/payroll",
-    icon: CreditCard,
-    roles: ["admin", "payroll_officer"],
-  },
-  {
-    name: "Reports",
-    href: "/reports",
-    icon: BarChart3,
-    roles: ["admin", "hr_officer", "payroll_officer"],
-  },
-  {
-    name: "Settings",
-    href: "/settings",
-    icon: Settings,
-    roles: ["admin"],
-  },
-  {
-    name: "Register",
-    href: "/register",
-    icon: UserPlus,
-    roles: ["admin"],
-  },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
+  { name: "Directory", href: "/directory", icon: Users, module: "directory" },
+  { name: "Attendance", href: "/attendance", icon: Clock, module: "attendance" },
+  { name: "Leave", href: "/leave", icon: Calendar, module: "leave" },
+  { name: "Payroll", href: "/payroll", icon: CreditCard, module: "payroll" },
+  { name: "Reports", href: "/reports", icon: BarChart3, module: "reports" },
+  { name: "Settings", href: "/settings", icon: Settings, module: "settings" },
 ];
 
 export default function Sidebar() {
-  const { user } = useAuth();
-  const role = user?.role || "employee";
+  const auth = useAuth();
+  const user = auth?.user;
+  const role = auth?.role || user?.role || "employee";
 
-  const visibleNavItems = ALL_NAV_ITEMS.filter((item) =>
-    item.roles.includes(role),
-  );
+  const visibleNavItems = useMemo(() => {
+    // Admin always sees everything
+    if (role === "admin") return ALL_NAV_ITEMS;
+
+    return ALL_NAV_ITEMS.filter((item) => {
+      const perm = (auth?.permissions || []).find((p) => p.module === item.module);
+      return perm && perm.access_level !== "none";
+    });
+  }, [role, auth?.permissions]);
 
   return (
     <aside className="w-64 bg-slate-900 flex flex-col h-full hidden md:flex border-r border-slate-800 shrink-0">

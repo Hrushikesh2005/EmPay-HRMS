@@ -135,12 +135,37 @@ def get_employee_attendance(user: User, db: Session, start_date: date | None = N
 	return query.order_by(AttendanceLog.work_date.desc()).all()
 
 
-def get_all_attendance(db: Session, start_date: date | None = None, end_date: date | None = None, employee_id: str | None = None) -> list[AttendanceLog]:
-	query = db.query(AttendanceLog)
+def get_all_attendance(db: Session, start_date: date | None = None, end_date: date | None = None, employee_id: str | None = None) -> list[dict]:
+	query = db.query(
+		AttendanceLog,
+		User.full_name
+	).join(
+		EmployeeProfile, AttendanceLog.employee_id == EmployeeProfile.id
+	).join(
+		User, EmployeeProfile.user_id == User.id
+	)
+	
 	if employee_id:
 		query = query.filter(AttendanceLog.employee_id == employee_id)
 	if start_date:
 		query = query.filter(AttendanceLog.work_date >= start_date)
 	if end_date:
 		query = query.filter(AttendanceLog.work_date <= end_date)
-	return query.order_by(AttendanceLog.work_date.desc()).all()
+	
+	results = query.order_by(AttendanceLog.work_date.desc()).all()
+	
+	output = []
+	for log, name in results:
+		# Map to a dict that matches AttendanceOut schema
+		log_dict = {
+			"id": log.id,
+			"employee_id": log.employee_id,
+			"full_name": name,
+			"work_date": log.work_date,
+			"check_in": log.check_in,
+			"check_out": log.check_out,
+			"status": log.status,
+			"remarks": log.remarks
+		}
+		output.append(log_dict)
+	return output

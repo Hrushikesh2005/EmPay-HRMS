@@ -10,6 +10,7 @@ import {
   Users,
   ChevronDown,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 import useAuth from "../hooks/useAuth.js";
 import api from "../api/axios.js";
@@ -85,16 +86,24 @@ function StatusTabs({ active, onChange }) {
 /* ─────────────────────────────────────────────
    APPLY LEAVE MODAL (Employee)
 ───────────────────────────────────────────── */
-function ApplyLeaveModal({ isOpen, onClose, leaveTypes, onSuccess }) {
+function ApplyLeaveModal({ isOpen, onClose, leaveTypes, onSuccess, isAdminView }) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-    setError,
   } = useForm();
 
+  const [employees, setEmployees] = useState([]);
   const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (isOpen && isAdminView) {
+      api.get("/employees")
+        .then(r => setEmployees(r.data || []))
+        .catch(console.error);
+    }
+  }, [isOpen, isAdminView]);
 
   const onSubmit = async (data) => {
     setToast(null);
@@ -104,13 +113,13 @@ function ApplyLeaveModal({ isOpen, onClose, leaveTypes, onSuccess }) {
         start_date: data.start_date,
         end_date: data.end_date,
         reason: data.reason || null,
+        employee_id: data.employee_id || null,
       });
       reset();
       onClose();
       onSuccess(res.data);
     } catch (err) {
-      const detail =
-        err?.response?.data?.detail || "Failed to submit leave request.";
+      const detail = err?.response?.data?.detail || "Failed to submit leave request.";
       setToast(detail);
     }
   };
@@ -122,10 +131,36 @@ function ApplyLeaveModal({ isOpen, onClose, leaveTypes, onSuccess }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="New Leave Request">
+    <Modal isOpen={isOpen} onClose={handleClose} title={isAdminView ? "Proxy Leave Request" : "New Leave Request"}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {toast && (
           <Toast message={toast} onDismiss={() => setToast(null)} />
+        )}
+
+        {/* Employee Selection (Admin/HR Only) */}
+        {isAdminView && (
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700">
+              Employee <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <select
+                className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-primary-500 ${errors.employee_id ? "border-red-400" : "border-slate-300"}`}
+                {...register("employee_id", { required: isAdminView ? "Please select an employee" : false })}
+              >
+                <option value="">Select employee…</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.user?.full_name} ({emp.employee_code})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+            {errors.employee_id && (
+              <span className="text-xs text-red-500">{errors.employee_id.message}</span>
+            )}
+          </div>
         )}
 
         {/* Leave Type */}
@@ -177,7 +212,7 @@ function ApplyLeaveModal({ isOpen, onClose, leaveTypes, onSuccess }) {
           <textarea
             rows={3}
             className="flex w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-            placeholder="Brief reason for your leave request…"
+            placeholder="Brief reason for the leave request…"
             {...register("reason")}
           />
         </div>
@@ -472,18 +507,35 @@ function EmployeeLeaveView() {
 ═══════════════════════════════════════════════ */
 function HRLeaveView() {
   const [requests, setRequests] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [statusTab, setStatusTab] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [reqRes, ltRes] = await Promise.all([
+        api.get("/leave-requests/"),
+        api.get("/leave-types/"),
+      ]);
+      setRequests(reqRes.data || []);
+      setLeaveTypes(ltRes.data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    setLoading(true);
-    api
-      .get("/leave-requests/")
-      .then((r) => setRequests(r.data || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    fetchAll();
+  }, [fetchAll]);
+
+  const handleSuccess = (created) => {
+    setRequests((prev) => [created, ...prev]);
+  };
 
   const filtered = requests.filter((r) => {
     const matchesStatus = statusTab === "all" || r.status === statusTab;
@@ -501,6 +553,7 @@ function HRLeaveView() {
   };
 
   const columns = [
+    // ... columns remain same
     {
       header: "Employee",
       accessor: "employee_name",
@@ -543,7 +596,24 @@ function HRLeaveView() {
       <PageHeader
         title="Time Off"
         description="View all employee leave requests across the organization."
+        actions={
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Leave
+          </Button>
+        }
       />
+
+      <ApplyLeaveModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        leaveTypes={leaveTypes}
+        onSuccess={handleSuccess}
+        isAdminView={true}
+      />
+
+      {/* Summary Stats */}
+      {/* ... rest of the component */}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -609,23 +679,36 @@ function HRLeaveView() {
 ═══════════════════════════════════════════════ */
 function AdminLeaveView() {
   const [requests, setRequests] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [statusTab, setStatusTab] = useState("all");
   const [search, setSearch] = useState("");
   const [reviewing, setReviewing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const fetchAll = useCallback(() => {
+  const fetchAll = useCallback(async () => {
     setLoading(true);
-    api
-      .get("/leave-requests/")
-      .then((r) => setRequests(r.data || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    try {
+      const [reqRes, ltRes] = await Promise.all([
+        api.get("/leave-requests/"),
+        api.get("/leave-types/"),
+      ]);
+      setRequests(reqRes.data || []);
+      setLeaveTypes(ltRes.data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  const handleSuccess = (created) => {
+    setRequests((prev) => [created, ...prev]);
+  };
 
   const handleReviewDone = (updated) => {
     setRequests((prev) =>
@@ -650,6 +733,7 @@ function AdminLeaveView() {
   };
 
   const columns = [
+    // ... columns remain same
     {
       header: "Employee",
       accessor: "employee_name",
@@ -723,6 +807,20 @@ function AdminLeaveView() {
       <PageHeader
         title="Time Off Management"
         description="Review and approve employee leave requests."
+        actions={
+          <Button onClick={() => setModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Leave
+          </Button>
+        }
+      />
+
+      <ApplyLeaveModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        leaveTypes={leaveTypes}
+        onSuccess={handleSuccess}
+        isAdminView={true}
       />
 
       {/* Summary Stats */}
@@ -815,16 +913,43 @@ function AdminLeaveView() {
    ROOT — role dispatch
 ═══════════════════════════════════════════════ */
 export default function Leave() {
-  const { role } = useAuth();
+  const { user } = useAuth();
+  const role = user?.role;
+  const [activeTab, setActiveTab] = useState("personal");
 
-  if (role === "admin" || role === "payroll_officer") {
-    return <AdminLeaveView />;
-  }
+  if (!role || role === "employee") return <EmployeeLeaveView />;
+  if (role === "admin") return <AdminLeaveView />;
 
-  if (role === "hr_officer") {
-    return <HRLeaveView />;
-  }
+  return (
+    <div className="space-y-6">
+      <div className="flex border-b border-slate-200">
+        <button
+          onClick={() => setActiveTab("personal")}
+          className={`px-6 py-3 text-sm font-medium transition-colors relative ${
+            activeTab === "personal" 
+              ? "text-primary-600 border-b-2 border-primary-600" 
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          My Time Off
+        </button>
+        <button
+          onClick={() => setActiveTab("management")}
+          className={`px-6 py-3 text-sm font-medium transition-colors relative ${
+            activeTab === "management" 
+              ? "text-primary-600 border-b-2 border-primary-600" 
+              : "text-slate-500 hover:text-slate-700"
+          }`}
+        >
+          Organization View
+        </button>
+      </div>
 
-  // employee (default)
-  return <EmployeeLeaveView />;
+      {activeTab === "personal" ? (
+        <EmployeeLeaveView />
+      ) : (
+        <HRLeaveView />
+      )}
+    </div>
+  );
 }

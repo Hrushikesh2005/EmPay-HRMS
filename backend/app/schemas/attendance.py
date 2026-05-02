@@ -11,6 +11,7 @@ class AttendanceCheckRequest(BaseModel):
 class AttendanceOut(BaseModel):
 	id: str
 	employee_id: str
+	full_name: Optional[str] = None
 	work_date: date
 	check_in: Optional[datetime]
 	check_out: Optional[datetime]

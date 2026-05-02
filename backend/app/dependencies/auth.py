@@ -60,6 +60,54 @@ def require_roles(*roles: UserRole):
     return _checker
 
 
+def require_permission(module: str, action: str = "view", required_level: str = "self"):
+    from app.models.permission import Permission, AccessLevel
+
+    def _checker(
+        current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    ) -> User:
+        # Admins have full access to everything
+        if current_user.role == UserRole.admin:
+            return current_user
+
+        perm = (
+            db.query(Permission)
+            .filter(Permission.role == current_user.role.value, Permission.module == module)
+            .first()
+        )
+
+        if not perm:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+            )
+
+        # Check Access Level (none < self < all)
+        level_map = {"none": 0, "self": 1, "all": 2}
+        user_level = level_map.get(perm.access_level.value, 0)
+        required_lvl = level_map.get(required_level, 1)
+
+        if user_level < required_lvl:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Insufficient access level for {module}",
+            )
+
+        if action == "edit" and not perm.can_edit:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to edit this module",
+            )
+        if action == "delete" and not perm.can_delete:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to delete from this module",
+            )
+
+        return current_user
+
+    return _checker
+
+
 # Usage examples:
 # Admin only
 # current_user: User = Depends(require_roles(UserRole.admin))

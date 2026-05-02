@@ -44,6 +44,8 @@ function buildSessionFromStorage() {
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(buildSessionFromStorage);
+  const [permissions, setPermissions] = useState(() => readJSON(localStorage.getItem("permissions")) || []);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
 
   useEffect(() => {
     const { accessToken, refreshToken, role, user } = session;
@@ -59,10 +61,37 @@ export function AuthProvider({ children }) {
 
     if (user) localStorage.setItem("user", JSON.stringify(user));
     else localStorage.removeItem("user");
-  }, [session]);
+
+    if (permissions && permissions.length > 0) {
+      localStorage.setItem("permissions", JSON.stringify(permissions));
+    } else {
+      localStorage.removeItem("permissions");
+    }
+  }, [session, permissions]);
+
+  const fetchPermissions = async () => {
+    setPermissionsLoading(true);
+    try {
+      const response = await api.get("/permissions/me");
+      setPermissions(response.data || []);
+    } catch (err) {
+      console.error("Failed to fetch permissions", err);
+    } finally {
+      setPermissionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (session.accessToken) {
+      fetchPermissions();
+    } else {
+      // Not logged in — no loading needed
+      setPermissionsLoading(false);
+    }
+  }, [session.accessToken]);
 
   const login = async (credentials) => {
-    // FastAPI OAuth2PasswordRequestForm expects form-encoded fields 'username' and 'password'
+    // ... same login logic ...
     const form = new URLSearchParams();
     form.append("username", credentials.email || credentials.username || "");
     form.append("password", credentials.password || "");
@@ -70,16 +99,6 @@ export function AuthProvider({ children }) {
     const response = await api.post("/auth/login", form, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
-    console.log("[AuthContext] Login response:", response.data);
-    const nextSession = normalizeSession(response.data);
-    console.log("[AuthContext] Normalized session:", nextSession);
-    setSession(nextSession);
-    setSessionTokens(nextSession);
-    return nextSession;
-  };
-
-  const register = async (payload) => {
-    const response = await api.post("/auth/register", payload);
     const nextSession = normalizeSession(response.data);
     setSession(nextSession);
     setSessionTokens(nextSession);
@@ -93,9 +112,11 @@ export function AuthProvider({ children }) {
       role: null,
       user: null,
     });
+    setPermissions([]);
     clearSessionTokens();
     localStorage.removeItem("role");
     localStorage.removeItem("user");
+    localStorage.removeItem("permissions");
   };
 
   const value = useMemo(() => {
@@ -106,14 +127,16 @@ export function AuthProvider({ children }) {
       refreshToken: session.refreshToken,
       user: session.user,
       role,
+      permissions,
+      permissionsLoading,
       mustChangePassword: session.mustChangePassword,
       isAuthenticated: Boolean(session.accessToken),
       login,
-      register,
       logout,
       setSession,
+      refreshPermissions: fetchPermissions,
     };
-  }, [session]);
+  }, [session, permissions, permissionsLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

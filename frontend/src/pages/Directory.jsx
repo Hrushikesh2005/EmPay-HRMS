@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Plus, Filter } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { StatusBadge } from "../components/ui/StatusBadge";
@@ -30,6 +31,7 @@ function getAvatarColor(name = "") {
 }
 
 export default function Directory() {
+  const navigate = useNavigate();
   const { role } = useAuth();
   const canEdit = role === "admin" || role === "hr_officer";
 
@@ -85,7 +87,7 @@ export default function Directory() {
         description="Click any employee card to view their full profile."
         actions={
           canEdit && (
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={() => navigate("/register")}>
               <Plus className="w-4 h-4" /> Add Employee
             </Button>
           )

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.dependencies import require_hr, require_roles, get_current_user
+from app.core.dependencies import require_permission, get_current_user
 from app.schemas.employee import EmployeeProfileCreate, EmployeeProfileOut, EmployeeProfileUpdate, SalaryStructureOut
 from app.services.employee_service import list_employees, get_employee, update_employee, create_employee_profile, get_employee_salary
 from app.models.employee import EmployeeProfile
@@ -11,7 +11,10 @@ router = APIRouter(prefix="/employees", tags=["Employees"])
 
 
 @router.get("", response_model=list[EmployeeProfileOut])
-def list_all(db: Session = Depends(get_db), current_user: User = Depends(require_hr)):
+def list_all(
+	db: Session = Depends(get_db),
+	current_user: User = Depends(require_permission("directory", "view")),
+):
 	return list_employees(db)
 
 
@@ -27,7 +30,11 @@ def get_my_profile(
 
 
 @router.get("/{employee_id}", response_model=EmployeeProfileOut)
-def get_one(employee_id: str, db: Session = Depends(get_db), current_user: User = Depends(require_hr)):
+def get_one(
+	employee_id: str,
+	db: Session = Depends(get_db),
+	current_user: User = Depends(require_permission("directory", "view")),
+):
 	return get_employee(employee_id, db)
 
 
@@ -35,7 +42,7 @@ def get_one(employee_id: str, db: Session = Depends(get_db), current_user: User 
 def create_profile(
 	data: EmployeeProfileCreate,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_hr),
+	current_user: User = Depends(require_permission("directory", "edit")),
 ):
 	return create_employee_profile(data, db)
 
@@ -45,7 +52,7 @@ def update_profile(
 	employee_id: str,
 	data: EmployeeProfileUpdate,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_hr),
+	current_user: User = Depends(require_permission("directory", "edit")),
 ):
 	return update_employee(employee_id, data, db)
 
@@ -54,6 +61,6 @@ def update_profile(
 def get_salary(
 	employee_id: str,
 	db: Session = Depends(get_db),
-	current_user: User = Depends(require_roles("admin", "payroll_officer")),
+	current_user: User = Depends(require_permission("payroll", "view")),
 ):
 	return get_employee_salary(employee_id, db)

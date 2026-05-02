@@ -6,7 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.dependencies import require_admin, get_current_user
+from app.core.dependencies import require_permission, get_current_user
 from app.core.employee_id import generate_employee_code
 from app.models.base import new_uuid
 from app.models.employee import EmployeeProfile
@@ -49,7 +49,7 @@ class OnboardEmployeeResponse(BaseModel):
 def onboard_employee(
     data: OnboardEmployeeRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("settings", "edit", required_level="all")),
 ):
     """Admin-only: Create a new employee user+profile, generate their employee code,
     and email their temporary credentials."""
@@ -112,7 +112,7 @@ class ChangePasswordRequest(BaseModel):
 
 
 @router.get("", response_model=list[UserAdminOut])
-def list_users(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+def list_users(db: Session = Depends(get_db), current_user: User = Depends(require_permission("settings", "view", required_level="all"))):
     return db.query(User).order_by(User.full_name.asc()).all()
 
 
@@ -121,7 +121,7 @@ def update_user_status(
     user_id: str,
     data: UserStatusUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("settings", "edit", required_level="all")),
 ):
     print(f"DEBUG: Attempting to update status for user_id: {user_id}")
     user = db.query(User).filter(User.id == user_id).first()
@@ -161,7 +161,7 @@ def update_user_role(
     user_id: str,
     data: UserRoleUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("settings", "edit", required_level="all")),
 ):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

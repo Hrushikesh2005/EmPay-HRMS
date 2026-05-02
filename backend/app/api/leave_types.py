@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
-from app.dependencies.auth import get_current_user
+from app.core.database import get_db
+from app.core.dependencies import get_current_user
 from app.models.leave_type import LeaveType
 from app.models.user import User
 from app.schemas.leave_type import LeaveTypeResponse

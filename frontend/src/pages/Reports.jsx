@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Download, Printer } from "lucide-react";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
@@ -68,7 +68,6 @@ const formatMoney = (value) =>
 export default function Reports() {
   const { user } = useAuth();
   const role = user?.role;
-  const isReportViewer = role === "admin" || role === "payroll_officer";
 
   const [employeeId, setEmployeeId] = useState(EMPLOYEE_OPTIONS[0].id);
   const [year, setYear] = useState(YEAR_OPTIONS[1]);
@@ -89,24 +88,6 @@ export default function Reports() {
   );
 
   const netSalary = totalEarnings - totalDeductions;
-
-  if (!isReportViewer) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Access Denied"
-          description="Reports are available only to administrators or payroll officers."
-        />
-        <Card>
-          <CardContent className="p-8">
-            <p className="text-slate-600">
-              Only administrators and payroll officers can access this section.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const handlePrint = () => {
     window.print();

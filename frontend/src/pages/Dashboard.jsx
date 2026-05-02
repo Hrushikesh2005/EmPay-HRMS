@@ -20,6 +20,7 @@ import {
 import api from "../api/axios.js";
 import useRealtime from "../hooks/useRealtime.js";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const MOCK_ATTENDANCE_DATA = [
   { name: "Mon", present: 12, absent: 1 },
@@ -30,8 +31,10 @@ const MOCK_ATTENDANCE_DATA = [
 ];
 
 export default function Dashboard() {
-  const { user, isLoading } = useAuth();
+  const { user, role } = useAuth();
   const [balances, setBalances] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   const fetchBalances = () => {
     api
@@ -40,20 +43,33 @@ export default function Dashboard() {
       .catch((e) => console.error(e));
   };
 
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true);
+      const r = await api.get("/stats/dashboard");
+      setStats(r.data);
+    } catch (e) {
+      console.error("Failed to load dashboard stats", e);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
   useEffect(() => {
-    if (user?.role === "employee") fetchBalances();
-  }, [user]);
+    if (!role) return;
+    if (role === "employee") fetchBalances();
+    else fetchStats();
+  }, [role]);
 
   useRealtime((ev) => {
     if (!ev) return;
     if (ev.type === "leave_request") fetchBalances();
+    if (ev.type === "attendance") fetchStats();
   });
 
-  if (isLoading) {
-    return <div className="text-slate-500">Loading dashboard...</div>;
+  if (!user || !role) {
+    return <div className="text-slate-500 p-8 flex items-center gap-2"><Loader2 className="animate-spin" /> Loading dashboard...</div>;
   }
-
-  const role = user?.role || "employee";
 
   return (
     <div className="space-y-6">
@@ -66,76 +82,33 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {user && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 mb-6">
-          <div className="font-medium text-slate-900">Your profile</div>
-          <div className="mt-2 space-y-1">
-            <div>
-              <span className="text-slate-500">Email:</span> {user.email}
-            </div>
-            <div>
-              <span className="text-slate-500">Role:</span> {user.role}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {role === "employee" && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            title="Total Allocated"
-            value={balances.reduce(
-              (acc, b) => acc + Number(b.allocated_days || 0),
-              0,
-            )}
-            icon={Calendar}
-            color="primary"
-          />
-          <StatCard
-            title="Used Leaves"
-            value={balances.reduce(
-              (acc, b) => acc + Number(b.used_days || 0),
-              0,
-            )}
-            icon={CheckCircle}
-            color="warning"
-          />
-          <StatCard
-            title="Remaining"
-            value={balances.reduce(
-              (acc, b) => acc + Number(b.remaining_days || 0),
-              0,
-            )}
-            icon={Calendar}
-            color="success"
-          />
-        </div>
-      )}
-
-      {(role === "hr_officer" || role === "admin") && (
+      {(role === "hr_officer" || role === "admin") && stats && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Total Headcount"
-              value="13"
+              value={stats.total_headcount}
               icon={Users}
               color="primary"
             />
             <StatCard
               title="Present Today"
-              value="12"
+              value={stats.present_today}
               icon={Clock}
               color="success"
             />
             <StatCard
               title="Pending Leaves"
-              value="3"
+              value={stats.pending_leaves}
               icon={Calendar}
               color="warning"
             />
             <StatCard
-              title="Last Payrun"
-              value="Processed"
+              title="Today's Attendance"
+              value={stats.total_headcount > 0 
+                ? `${Math.round((stats.present_today / stats.total_headcount) * 100)}%`
+                : "0%"
+              }
               icon={CheckCircle}
               color="primary"
             />
@@ -148,7 +121,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={MOCK_ATTENDANCE_DATA}>
+                  <BarChart data={stats.attendance_trends}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" />
                     <YAxis />
@@ -170,28 +143,21 @@ export default function Dashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Team Attendance Summary</CardTitle>
+                <CardTitle>Department Headcount</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 sm:p-4 border rounded-xl">
-                    <span className="font-medium">Engineering</span>
-                    <span className="text-emerald-600 font-semibold">
-                      95% Present
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 sm:p-4 border rounded-xl">
-                    <span className="font-medium">Design</span>
-                    <span className="text-emerald-600 font-semibold">
-                      100% Present
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 sm:p-4 border rounded-xl">
-                    <span className="font-medium">Product</span>
-                    <span className="text-amber-600 font-semibold">
-                      80% Present
-                    </span>
-                  </div>
+                  {stats.dept_stats?.map(([dept, count]) => (
+                    <div key={dept || "Other"} className="flex justify-between items-center p-3 sm:p-4 border rounded-xl">
+                      <span className="font-medium">{dept || "Unassigned"}</span>
+                      <span className="text-primary-600 font-semibold">
+                        {count} {count === 1 ? "Employee" : "Employees"}
+                      </span>
+                    </div>
+                  ))}
+                  {(!stats.dept_stats || stats.dept_stats.length === 0) && (
+                    <div className="text-slate-400 text-sm py-4 text-center">No department data available.</div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -204,19 +170,25 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
               title="Current Payrun Tasks"
-              value="2 Pending"
+              value={stats?.pending_leaves > 0 ? `${stats.pending_leaves} Actions` : "No Tasks"}
               icon={CreditCard}
               color="warning"
             />
             <StatCard
-              title="Leave Approvals Queue"
-              value="4"
-              icon={Calendar}
+              title="Today's Attendance"
+              value={stats?.total_headcount > 0 
+                ? `${Math.round((stats.present_today / stats.total_headcount) * 100)}%`
+                : "0%"
+              }
+              icon={CheckCircle}
               color="warning"
             />
             <StatCard
-              title="Processed this Month"
-              value="$42,500"
+              title="Estimated Monthly Cost"
+              value={stats?.employer_cost?.length > 0 
+                ? `₹${(stats.employer_cost[stats.employer_cost.length - 1].value / 1000).toFixed(1)}k`
+                : "₹0"
+              }
               icon={CheckCircle}
               color="success"
             />
@@ -237,6 +209,33 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </>
+      )}
+      {role === "employee" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {balances.length === 0 && (
+              <Card className="col-span-3">
+                <CardContent className="p-8 text-center text-slate-400">
+                  No leave balances found. Contact HR to set up your leave allocation.
+                </CardContent>
+              </Card>
+            )}
+            {balances.map((b) => (
+              <Card key={b.id} className="border shadow-sm">
+                <CardContent className="p-5 flex flex-col gap-1">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    {b.leave_type_name || b.leave_type?.name || "Leave"}
+                  </p>
+                  <div className="flex items-end gap-2 mt-1">
+                    <span className="text-3xl font-bold text-primary-600">{b.remaining_days ?? b.balance ?? 0}</span>
+                    <span className="text-sm text-slate-400 mb-1">/ {b.total_days ?? b.allocated_days ?? 0} days</span>
+                  </div>
+                  <p className="text-xs text-slate-400">Available balance</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
