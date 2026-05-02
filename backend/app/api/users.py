@@ -49,7 +49,7 @@ class OnboardEmployeeResponse(BaseModel):
 def onboard_employee(
     data: OnboardEmployeeRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("settings", "edit", required_level="all")),
+    current_user: User = Depends(require_permission("directory", "edit", required_level="all")),
 ):
     """Admin-only: Create a new employee user+profile, generate their employee code,
     and email their temporary credentials."""
