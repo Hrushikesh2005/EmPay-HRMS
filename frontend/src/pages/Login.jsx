@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Building2 } from "lucide-react";
 import {
   Card,
@@ -111,16 +111,6 @@ export default function Login() {
                 Sign in
               </Button>
             </form>
-
-            <p className="mt-6 text-center text-sm text-slate-500">
-              Need an account?{" "}
-              <Link
-                to="/register"
-                className="font-medium text-primary-700 hover:text-primary-800"
-              >
-                Register
-              </Link>
-            </p>
           </CardContent>
         </Card>
       </div>

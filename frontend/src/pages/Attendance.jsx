@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Clock, CheckCircle2, History } from "lucide-react";
+import { Clock, CheckCircle2, History, Users } from "lucide-react";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
+import useAuth from "../hooks/useAuth.js";
 
 // Mock Data
 const ATTENDANCE_HISTORY = [
@@ -16,7 +17,17 @@ const ATTENDANCE_HISTORY = [
   { id: 5, date: '2026-04-28', checkIn: '--:-- AM', checkOut: '--:-- PM', hours: '-', status: 'on_leave' },
 ];
 
+const EMPLOYEE_ATTENDANCE = [
+  { id: 1, name: "Dev Nair", status: "present", checkIn: "09:02 AM", checkOut: "--:-- PM", hours: "--", todayStatus: "Checked In" },
+  { id: 2, name: "Priya Kapoor", status: "present", checkIn: "09:15 AM", checkOut: "05:30 PM", hours: "8h 15m", todayStatus: "Checked Out" },
+  { id: 3, name: "Rajesh Kumar", status: "absent", checkIn: "--", checkOut: "--", hours: "--", todayStatus: "Absent" },
+  { id: 4, name: "Sneha Patel", status: "on_leave", checkIn: "--", checkOut: "--", hours: "--", todayStatus: "On Leave" },
+];
+
 export default function Attendance() {
+  const { role } = useAuth();
+  const isAdminOrHr = role === 'admin' || role === 'hr_officer';
+  
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
@@ -43,6 +54,41 @@ export default function Attendance() {
     { header: "Status", accessor: "status", render: (row) => <StatusBadge status={row.status} /> }
   ];
 
+  if (isAdminOrHr) {
+    return (
+      <div className="space-y-6">
+        <PageHeader 
+          title="Attendance Overview" 
+          description="Monitor employee attendance and check-in status across the organization."
+        />
+
+        <Card>
+          <CardHeader className="border-b border-slate-100 flex flex-row items-center justify-between py-4">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-slate-400" />
+              <CardTitle className="text-lg">Employee Attendance</CardTitle>
+            </div>
+            <Button variant="secondary" size="sm">Export CSV</Button>
+          </CardHeader>
+          <CardContent className="p-0">
+            <DataTable
+              columns={[
+                { header: "Employee", accessor: "name" },
+                { header: "Today Status", accessor: "todayStatus" },
+                { header: "Check In", accessor: "checkIn" },
+                { header: "Check Out", accessor: "checkOut" },
+                { header: "Hours", accessor: "hours" },
+                { header: "Status", accessor: "status", render: (row) => <StatusBadge status={row.status} /> },
+              ]}
+              data={EMPLOYEE_ATTENDANCE}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Employee view
   return (
     <div className="space-y-6">
       <PageHeader 
