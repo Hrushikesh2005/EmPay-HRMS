@@ -16,7 +16,6 @@ import { Modal } from "../components/ui/Modal";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { StatCard } from "../components/ui/StatCard";
-import useAuth from "../hooks/useAuth.js";
 
 // Mock Data
 const MY_LEAVES = [
