@@ -48,6 +48,9 @@ coverage.xml
 
 # Misc
 thumbs.db
+
+# Task logs
+Tasks Performed.md
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
