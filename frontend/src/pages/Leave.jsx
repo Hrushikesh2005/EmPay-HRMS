@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { format } from "date-fns";
-import { Calendar, Check, X, FileText, BarChart3 } from "lucide-react";
+import { Calendar, Check, X, BarChart3 } from "lucide-react";
 import useAuth from "../hooks/useAuth.js";
+import api from "../api/axios.js";
+import useRealtime from "../hooks/useRealtime.js";
 import { PageHeader } from "../components/ui/PageHeader";
 import {
   Card,
@@ -16,7 +18,6 @@ import { Modal } from "../components/ui/Modal";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { StatCard } from "../components/ui/StatCard";
-import useAuth from "../hooks/useAuth.js";
 
 // Mock Data
 const MY_LEAVES = [
@@ -91,6 +92,8 @@ export default function Leave() {
   const isHR = role === "admin" || role === "hr_officer";
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [balances, setBalances] = useState([]);
+  const [myLeaves, setMyLeaves] = useState(MY_LEAVES);
   const {
     register,
     handleSubmit,
@@ -98,12 +101,70 @@ export default function Leave() {
     formState: { errors },
   } = useForm();
 
-  const onSubmitLeave = (data) => {
-    console.log("Submitting Leave Request: ", data);
-    // API logic will go here
-    setIsModalOpen(false);
-    reset();
+  const fetchBalances = () => {
+    api
+      .get("/leave-balances/me")
+      .then((r) => setBalances(r.data || []))
+      .catch((e) => console.error(e));
   };
+
+  const fetchMyLeaves = () => {
+    api
+      .get("/leave-requests/me")
+      .then((r) => setMyLeaves(r.data || []))
+      .catch((e) => console.error(e));
+  };
+
+  const onSubmitLeave = (data) => {
+    const payload = {
+      leave_type_id: data.leave_type,
+      start_date: data.from_date,
+      end_date: data.to_date,
+      reason: data.reason,
+    };
+
+    api
+      .post("/leave-requests", payload)
+      .then((res) => {
+        const created = res.data;
+        setMyLeaves((s) => [
+          {
+            id: created.id,
+            type: "", // leave type name can be filled after fetch
+            from: created.start_date,
+            to: created.end_date,
+            days: created.total_days,
+            status: created.status,
+          },
+          ...s,
+        ]);
+        // refresh balances
+        fetchBalances();
+      })
+      .catch((err) => {
+        console.error(err);
+      })
+      .finally(() => {
+        setIsModalOpen(false);
+        reset();
+      });
+  };
+
+  useRealtime((event) => {
+    if (!event) return;
+    if (event.type === "leave_request") {
+      // if created by this user, refresh list/balances
+      fetchMyLeaves();
+      fetchBalances();
+    }
+  });
+
+  useEffect(() => {
+    if (role === "employee") {
+      fetchBalances();
+      fetchMyLeaves();
+    }
+  }, [role]);
 
   const myLeavesColumns = [
     {
@@ -246,7 +307,7 @@ export default function Leave() {
               <CardTitle className="text-lg">My Leave History</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <DataTable columns={myLeavesColumns} data={MY_LEAVES} />
+              <DataTable columns={myLeavesColumns} data={myLeaves} />
             </CardContent>
           </Card>
 
@@ -388,24 +449,19 @@ export default function Leave() {
 
       {/* Balance Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          title="Paid Leave Remaining"
-          value="12"
-          icon={Calendar}
-          color="primary"
-        />
-        <StatCard
-          title="Sick Leave Remaining"
-          value="5"
-          icon={Calendar}
-          color="success"
-        />
-        <StatCard
-          title="Unpaid Leaves Taken"
-          value="2"
-          icon={FileText}
-          color="warning"
-        />
+        {balances.length === 0 ? (
+          <StatCard title="No balances found" value="—" icon={Calendar} />
+        ) : (
+          balances.map((b) => (
+            <StatCard
+              key={b.id}
+              title={b.leave_type_name}
+              value={`${b.remaining_days}`}
+              icon={Calendar}
+              color="primary"
+            />
+          ))
+        )}
       </div>
 
       {/* My Leaves Record */}
@@ -414,7 +470,7 @@ export default function Leave() {
           <CardTitle className="text-lg">My Leave History</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <DataTable columns={myLeavesColumns} data={MY_LEAVES} />
+            <DataTable columns={myLeavesColumns} data={myLeaves} />
         </CardContent>
       </Card>
     </div>
