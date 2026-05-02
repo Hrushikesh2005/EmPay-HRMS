@@ -15,6 +15,7 @@ from app.api.leave import router as leave_router
 from app.api.users import router as users_router
 from app.api.leave_types import router as leave_types_router
 from app.api.leave_balances import router as leave_balances_router
+from app.api.realtime import router as realtime_router
 
 app = FastAPI(title="EmPay HRMS API")
 
@@ -33,6 +34,7 @@ app.include_router(leave_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(leave_types_router, prefix="/api/v1")
 app.include_router(leave_balances_router, prefix="/api/v1")
+app.include_router(realtime_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])

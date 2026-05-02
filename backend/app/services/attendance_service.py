@@ -45,6 +45,30 @@ def check_in(user: User, remarks: str | None, db: Session) -> AttendanceLog:
 
 	db.commit()
 	db.refresh(attendance)
+	# send realtime update (fire-and-forget)
+	try:
+		import asyncio
+		from app.api.realtime import manager
+
+		payload = {
+			"type": "attendance",
+			"action": "check_in",
+			"data": {
+				"id": attendance.id,
+				"employee_id": attendance.employee_id,
+				"work_date": attendance.work_date.isoformat(),
+				"check_in": attendance.check_in.isoformat() if attendance.check_in else None,
+				"check_out": attendance.check_out.isoformat() if attendance.check_out else None,
+				"status": attendance.status.name if hasattr(attendance.status, 'name') else str(attendance.status),
+				"remarks": attendance.remarks,
+			},
+		}
+		# schedule async send
+		asyncio.create_task(manager.send_personal_message(user.id, payload))
+	except Exception:
+		# don't let realtime errors break attendance flow
+		pass
+
 	return attendance
 
 
@@ -67,4 +91,36 @@ def check_out(user: User, remarks: str | None, db: Session) -> AttendanceLog:
 
 	db.commit()
 	db.refresh(attendance)
+	# send realtime update (fire-and-forget)
+	try:
+		import asyncio
+		from app.api.realtime import manager
+
+		payload = {
+			"type": "attendance",
+			"action": "check_out",
+			"data": {
+				"id": attendance.id,
+				"employee_id": attendance.employee_id,
+				"work_date": attendance.work_date.isoformat(),
+				"check_in": attendance.check_in.isoformat() if attendance.check_in else None,
+				"check_out": attendance.check_out.isoformat() if attendance.check_out else None,
+				"status": attendance.status.name if hasattr(attendance.status, 'name') else str(attendance.status),
+				"remarks": attendance.remarks,
+			},
+		}
+		asyncio.create_task(manager.send_personal_message(user.id, payload))
+	except Exception:
+		pass
+
 	return attendance
+
+
+def list_my_attendance(user: User, db: Session) -> list[AttendanceLog]:
+	profile = _get_employee_profile(user, db)
+	return (
+		db.query(AttendanceLog)
+		.filter(AttendanceLog.employee_id == profile.id)
+		.order_by(AttendanceLog.work_date.desc())
+		.all()
+	)

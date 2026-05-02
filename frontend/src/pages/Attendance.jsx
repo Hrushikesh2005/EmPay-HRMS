@@ -7,6 +7,8 @@ import { Button } from "../components/ui/Button";
 import { DataTable } from "../components/ui/DataTable";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import useAuth from "../hooks/useAuth.js";
+import api from "../api/axios.js";
+import useRealtime from "../hooks/useRealtime.js";
 
 // Mock Data
 const ATTENDANCE_HISTORY = [
@@ -31,6 +33,34 @@ export default function Attendance() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
+  const [attendanceHistory, setAttendanceHistory] = useState(ATTENDANCE_HISTORY);
+
+  const fetchAttendance = () => {
+    api
+      .get("/attendance/me")
+      .then((res) => {
+        const data = res.data || [];
+        setAttendanceHistory(
+          data.map((d, idx) => ({
+            id: d.id || idx,
+            date: d.work_date,
+            checkIn: d.check_in ? new Date(d.check_in).toLocaleTimeString() : "--:--",
+            checkOut: d.check_out ? new Date(d.check_out).toLocaleTimeString() : "--:--",
+            hours: "-",
+            status: d.status,
+          })),
+        );
+
+        if (data.length > 0) {
+          const today = data.find((r) => new Date(r.work_date).toDateString() === new Date().toDateString());
+          if (today) {
+            setIsCheckedIn(!!today.check_in);
+            setIsCheckedOut(!!today.check_out);
+          }
+        }
+      })
+      .catch((e) => console.error(e));
+  };
 
   // Live clock ticker
   useEffect(() => {
@@ -38,11 +68,37 @@ export default function Attendance() {
     return () => clearInterval(timer);
   }, []);
 
+  // initial fetch
+  useEffect(() => {
+    fetchAttendance();
+  }, []);
+
+  // subscribe to realtime updates for attendance
+  useRealtime((event) => {
+    if (!event) return;
+    if (event.type === "attendance") {
+      // refresh attendance when attendance events arrive
+      fetchAttendance();
+    }
+  });
+
   const handleCheckInOut = () => {
     if (!isCheckedIn) {
-      setIsCheckedIn(true);
+      api
+        .post("/attendance/checkin", { remarks: null })
+        .then(() => {
+          setIsCheckedIn(true);
+          fetchAttendance();
+        })
+        .catch((e) => console.error(e));
     } else {
-      setIsCheckedOut(true);
+      api
+        .post("/attendance/checkout", { remarks: null })
+        .then(() => {
+          setIsCheckedOut(true);
+          fetchAttendance();
+        })
+        .catch((e) => console.error(e));
     }
   };
 
@@ -147,7 +203,7 @@ export default function Attendance() {
           <Button variant="secondary" size="sm">Export CSV</Button>
         </CardHeader>
         <CardContent className="p-0">
-          <DataTable columns={columns} data={ATTENDANCE_HISTORY} />
+          <DataTable columns={columns} data={attendanceHistory} />
         </CardContent>
       </Card>
     </div>

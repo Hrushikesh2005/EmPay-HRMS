@@ -90,10 +90,13 @@ export default function Leave() {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   const isHR = role === "admin" || role === "hr_officer";
+  const isEmployee = role === "employee";
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [balances, setBalances] = useState([]);
   const [myLeaves, setMyLeaves] = useState(MY_LEAVES);
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const {
     register,
     handleSubmit,
@@ -125,21 +128,9 @@ export default function Leave() {
 
     api
       .post("/leave-requests", payload)
-      .then((res) => {
-        const created = res.data;
-        setMyLeaves((s) => [
-          {
-            id: created.id,
-            type: "", // leave type name can be filled after fetch
-            from: created.start_date,
-            to: created.end_date,
-            days: created.total_days,
-            status: created.status,
-          },
-          ...s,
-        ]);
-        // refresh balances
+      .then(() => {
         fetchBalances();
+        fetchMyLeaves();
       })
       .catch((err) => {
         console.error(err);
@@ -160,11 +151,14 @@ export default function Leave() {
   });
 
   useEffect(() => {
-    if (role === "employee") {
-      fetchBalances();
-      fetchMyLeaves();
+    if (isEmployee) {
+      Promise.all([
+        api.get("/leave-balances/me").then((r) => setBalances(r.data || [])).catch(() => setBalances([])),
+        api.get("/leave-requests/me").then((r) => setMyLeaves(r.data || [])).catch(() => setMyLeaves([])),
+        api.get("/leave-types").then((r) => setLeaveTypes(r.data || [])).catch(() => setLeaveTypes([])),
+      ]).finally(() => setIsLoading(false));
     }
-  }, [role]);
+  }, [isEmployee]);
 
   const myLeavesColumns = [
     {
@@ -370,109 +364,124 @@ export default function Leave() {
   }
 
   // Employee view
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Leave Management"
-        description="Apply for time off and track your leave balances."
-        actions={
-          <Button onClick={() => setIsModalOpen(true)}>Apply for Leave</Button>
-        }
-      />
+  if (!isAdmin && !isHR) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Leave Management"
+          description="Apply for time off and track your leave balances."
+          actions={
+            <Button onClick={() => setIsModalOpen(true)}>Apply for Leave</Button>
+          }
+        />
 
-      {/* Leave Application Form Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="New Leave Request"
-      >
-        <form onSubmit={handleSubmit(onSubmitLeave)} className="space-y-4">
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
-              Leave Type
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              {...register("leave_type", { required: true })}
-            >
-              <option value="">Select leave type...</option>
-              <option value="Paid Leave">Paid Leave</option>
-              <option value="Sick Leave">Sick Leave</option>
-              <option value="Unpaid Leave">Unpaid Leave</option>
-            </select>
-            {errors.leave_type && (
-              <span className="text-xs text-danger">Required field</span>
+        {/* Leave Application Form Modal */}
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title="New Leave Request"
+        >
+          <form onSubmit={handleSubmit(onSubmitLeave)} className="space-y-4">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">
+                Leave Type
+              </label>
+              <select
+                className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                {...register("leave_type", { required: true })}
+              >
+                <option value="">Select leave type...</option>
+                {leaveTypes.map((lt) => (
+                  <option key={lt.id} value={lt.id}>
+                    {lt.name}
+                  </option>
+                ))}
+              </select>
+              {errors.leave_type && (
+                <span className="text-xs text-danger">Required field</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                type="date"
+                label="From Date"
+                {...register("from_date", { required: true })}
+                error={errors.from_date && "Required field"}
+              />
+              <Input
+                type="date"
+                label="To Date"
+                {...register("to_date", { required: true })}
+                error={errors.to_date && "Required field"}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">
+                Reason
+              </label>
+              <textarea
+                className="flex w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-25"
+                placeholder="Please provide a brief reason for your leave..."
+                {...register("reason", { required: true })}
+              />
+              {errors.reason && (
+                <span className="text-xs text-danger">Required field</span>
+              )}
+            </div>
+
+            <div className="pt-4 flex justify-end gap-2">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Submit Request</Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Balance Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {isLoading ? (
+            <div className="col-span-full text-slate-500 text-center py-4">Loading leave balances...</div>
+          ) : balances.length === 0 ? (
+            <StatCard title="No balances found" value="—" icon={Calendar} />
+          ) : (
+            balances.map((b) => (
+              <StatCard
+                key={b.id}
+                title={b.leave_type_name}
+                value={`${b.remaining_days}`}
+                icon={Calendar}
+                color="primary"
+              />
+            ))
+          )}
+        </div>
+
+        {/* My Leaves Record */}
+        <Card>
+          <CardHeader className="border-b border-slate-100">
+            <CardTitle className="text-lg">My Leave History</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {isLoading ? (
+              <div className="p-4 text-slate-500 text-center">Loading leave history...</div>
+            ) : myLeaves.length === 0 ? (
+              <div className="p-4 text-slate-500 text-center">No leave requests found</div>
+            ) : (
+              <DataTable columns={myLeavesColumns} data={myLeaves} />
             )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="date"
-              label="From Date"
-              {...register("from_date", { required: true })}
-              error={errors.from_date && "Required field"}
-            />
-            <Input
-              type="date"
-              label="To Date"
-              {...register("to_date", { required: true })}
-              error={errors.to_date && "Required field"}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">
-              Reason
-            </label>
-            <textarea
-              className="flex w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-25"
-              placeholder="Please provide a brief reason for your leave..."
-              {...register("reason", { required: true })}
-            />
-            {errors.reason && (
-              <span className="text-xs text-danger">Required field</span>
-            )}
-          </div>
-
-          <div className="pt-4 flex justify-end gap-2">
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit">Submit Request</Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Balance Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {balances.length === 0 ? (
-          <StatCard title="No balances found" value="—" icon={Calendar} />
-        ) : (
-          balances.map((b) => (
-            <StatCard
-              key={b.id}
-              title={b.leave_type_name}
-              value={`${b.remaining_days}`}
-              icon={Calendar}
-              color="primary"
-            />
-          ))
-        )}
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
 
-      {/* My Leaves Record */}
-      <Card>
-        <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-lg">My Leave History</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-            <DataTable columns={myLeavesColumns} data={myLeaves} />
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // Fallback for HR/Admin - should not reach here as they have their own returns above
+  return <div className="text-slate-500">Loading...</div>;
 }

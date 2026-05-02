@@ -4,6 +4,7 @@ from app.core.database import get_db
 from app.core.dependencies import require_roles
 from app.schemas.attendance import AttendanceCheckRequest, AttendanceOut
 from app.services.attendance_service import check_in, check_out
+from app.services.attendance_service import list_my_attendance
 from app.models.user import User
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
@@ -25,3 +26,11 @@ def mark_check_out(
 	current_user: User = Depends(require_roles("employee", "admin")),
 ):
 	return check_out(current_user, data.remarks, db)
+
+
+@router.get("/me", response_model=list[AttendanceOut])
+def my_attendance(
+	db: Session = Depends(get_db),
+	current_user: User = Depends(require_roles("employee")),
+):
+	return list_my_attendance(current_user, db)
