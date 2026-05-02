@@ -1,7 +1,12 @@
-import React from "react";
 import { cn } from "../../utils/cn";
 
-export function DataTable({ columns, data, keyField = "id", emptyMessage = "No records found.", className }) {
+export function DataTable({
+  columns,
+  data,
+  keyField = "id",
+  emptyMessage = "No records found.",
+  className,
+}) {
   return (
     <div className={cn("overflow-x-auto w-full", className)}>
       <table className="w-full text-left text-sm whitespace-nowrap">
@@ -17,9 +22,15 @@ export function DataTable({ columns, data, keyField = "id", emptyMessage = "No r
         <tbody className="divide-y divide-slate-200 bg-white">
           {data.length > 0 ? (
             data.map((row) => (
-              <tr key={row[keyField]} className="hover:bg-slate-50 transition-colors">
+              <tr
+                key={row[keyField]}
+                className="hover:bg-slate-50 transition-colors"
+              >
                 {columns.map((col, colIndex) => (
-                  <td key={colIndex} className={cn("px-6 py-4", col.cellClassName)}>
+                  <td
+                    key={colIndex}
+                    className={cn("px-6 py-4", col.cellClassName)}
+                  >
                     {col.render ? col.render(row) : row[col.accessor]}
                   </td>
                 ))}
@@ -27,7 +38,10 @@ export function DataTable({ columns, data, keyField = "id", emptyMessage = "No r
             ))
           ) : (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-12 text-center text-slate-500">
+              <td
+                colSpan={columns.length}
+                className="px-6 py-12 text-center text-slate-500"
+              >
                 {emptyMessage}
               </td>
             </tr>

@@ -1,16 +1,16 @@
-﻿import React from "react";
-import { useAuth } from "../context/AuthContext";
+import React from "react";
+import useAuth from "../hooks/useAuth.js";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
 import { StatCard } from "../components/ui/StatCard";
 import { Users, Clock, Calendar, CheckCircle, CreditCard } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const MOCK_ATTENDANCE_DATA = [
-  { name: '"Mon"', present: 12, absent: 1 },
-  { name: '"Tue"', present: 13, absent: 0 },
-  { name: '"Wed"', present: 10, absent: 3 },
-  { name: '"Thu"', present: 13, absent: 0 },
-  { name: '"Fri"', present: 11, absent: 2 },
+  { name: 'Mon', present: 12, absent: 1 },
+  { name: 'Tue', present: 13, absent: 0 },
+  { name: 'Wed', present: 10, absent: 3 },
+  { name: 'Thu', present: 13, absent: 0 },
+  { name: 'Fri', present: 11, absent: 2 },
 ];
 
 export default function Dashboard() {
@@ -20,18 +20,28 @@ export default function Dashboard() {
     return <div className="text-slate-500">Loading dashboard...</div>;
   }
 
-  const role = user?.role || '"hr_officer"'; // mock
+  const role = user?.role || "employee";
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500">Welcome back{user ? ", ${user.full_name}" : ""}.</p>
+          <p className="text-slate-500">Welcome back{user ? `, ${user.full_name}` : ""}.</p>
         </div>
       </div>
 
-      {(role === '"hr_officer"' || role === '"admin"') && (
+      {user && (
+        <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 mb-6">
+          <div className="font-medium text-slate-900">Your profile</div>
+          <div className="mt-2 space-y-1">
+            <div><span className="text-slate-500">Email:</span> {user.email}</div>
+            <div><span className="text-slate-500">Role:</span> {user.role}</div>
+          </div>
+        </div>
+      )}
+
+      {(role === "hr_officer" || role === "admin") && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard title="Total Headcount" value="13" icon={Users} color="primary" />
@@ -84,12 +94,12 @@ export default function Dashboard() {
         </>
       )}
 
-      {role === '"payroll_officer"' && (
+      {role === "payroll_officer" && (
         <>
            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <StatCard title="Current Payrun Tasks" value="2 Pending" icon={CreditCard} color="warning" />
               <StatCard title="Leave Approvals Queue" value="4" icon={Calendar} color="warning" />
-              <StatCard title="Processed this Month" value=",500" icon={CheckCircle} color="success" />
+              <StatCard title="Processed this Month" value="$42,500" icon={CheckCircle} color="success" />
            </div>
 
            <Card>

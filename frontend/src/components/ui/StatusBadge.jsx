@@ -1,4 +1,3 @@
-import React from "react";
 import { cn } from "../../utils/cn";
 
 const badgeVariants = {
@@ -13,14 +12,24 @@ const badgeVariants = {
 };
 
 export function StatusBadge({ status, className }) {
-  const normalizedStatus = typeof status === 'string' ? status.toLowerCase().replace(" ", "_") : "default";
+  const normalizedStatus =
+    typeof status === "string"
+      ? status.toLowerCase().replace(" ", "_")
+      : "default";
   const variantClass = badgeVariants[normalizedStatus] || badgeVariants.default;
-  
+
   // Format text: "half_day" -> "Half Day"
-  const displayText = typeof status === 'string' ? status.replace("_", " ") : String(status);
+  const displayText =
+    typeof status === "string" ? status.replace("_", " ") : String(status);
 
   return (
-    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border capitalize", variantClass, className)}>
+    <span
+      className={cn(
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border capitalize",
+        variantClass,
+        className,
+      )}
+    >
       {displayText}
     </span>
   );

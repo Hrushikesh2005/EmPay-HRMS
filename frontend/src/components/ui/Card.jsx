@@ -1,9 +1,14 @@
-import React from "react";
 import { cn } from "../../utils/cn";
 
 export function Card({ className, children, ...props }) {
   return (
-    <div className={cn("bg-white rounded-xl border border-slate-200 shadow-sm", className)} {...props}>
+    <div
+      className={cn(
+        "bg-white rounded-xl border border-slate-200 shadow-sm",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </div>
   );
@@ -19,7 +24,13 @@ export function CardHeader({ className, children, ...props }) {
 
 export function CardTitle({ className, children, ...props }) {
   return (
-    <h3 className={cn("text-xl font-semibold leading-none tracking-tight text-slate-900", className)} {...props}>
+    <h3
+      className={cn(
+        "text-xl font-semibold leading-none tracking-tight text-slate-900",
+        className,
+      )}
+      {...props}
+    >
       {children}
     </h3>
   );

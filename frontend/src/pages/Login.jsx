@@ -1,33 +1,59 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Building2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
-import { Building2 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import useAuth from "../hooks/useAuth.js";
+
+function validate(values) {
+  const errors = {};
+  if (!values.email.trim()) errors.email = "Email is required.";
+  if (!values.password) errors.password = "Password is required.";
+  return errors;
+}
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const auth = useAuth();
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(null);
-    if (!email || !password) {
-      return setError("Please fill in all fields.");
-    }
+  const canSubmit = useMemo(
+    () => Object.keys(validate(form)).length === 0,
+    [form],
+  );
+
+  const handleChange = (field) => (event) => {
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const nextErrors = validate(form);
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) return;
+
     setIsLoading(true);
+    setSubmitError("");
 
     try {
-      await login(email, password);
+      await auth.login(form);
       navigate("/dashboard", { replace: true });
-    } catch (err) {
-      const detail = err?.response?.data?.detail;
-      setError(detail || "Login failed. Please try again.");
+    } catch (error) {
+      setSubmitError(
+        error?.response?.data?.detail ||
+          error?.response?.data?.message ||
+          "Login failed. Check your credentials and try again.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -40,8 +66,10 @@ export default function Login() {
           <div className="bg-primary-600 p-3 rounded-xl mb-4 shadow-sm">
             <Building2 className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900">EmPay HRMS</h2>
-          <p className="text-slate-500 mt-2">Sign in to your employee portal</p>
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">
+            EmPay HRMS
+          </h2>
+          <p className="text-slate-500 mt-2">Sign in to continue.</p>
         </div>
 
         <Card>
@@ -50,37 +78,49 @@ export default function Login() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
+              {submitError ? (
                 <div className="p-3 bg-red-50 text-danger text-sm rounded-md border border-red-100">
-                  {error}
+                  {submitError}
                 </div>
-              )}
-              
-              <Input 
-                label="Email address" 
-                type="email" 
-                placeholder="name@empay.io" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+              ) : null}
+
+              <Input
+                label="Email address"
+                type="email"
+                placeholder="name@empay.io"
+                value={form.email}
+                onChange={handleChange("email")}
+                error={errors.email}
               />
-              
-              <Input 
-                label="Password" 
-                type="password" 
-                placeholder="••••••••" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+
+              <Input
+                label="Password"
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={handleChange("password")}
+                error={errors.password}
               />
-              
-              <Button type="submit" className="w-full mt-2" isLoading={isLoading}>
+
+              <Button
+                type="submit"
+                className="w-full mt-2"
+                isLoading={isLoading}
+                disabled={!canSubmit && !isLoading}
+              >
                 Sign in
               </Button>
             </form>
-            
-            <div className="mt-6 text-center text-sm text-slate-500">
-              <p>Demo Credentials:</p>
-              <p className="mt-1">admin@empay.com | hr1@empay.com | emp1@empay.com</p>
-            </div>
+
+            <p className="mt-6 text-center text-sm text-slate-500">
+              Need an account?{" "}
+              <Link
+                to="/register"
+                className="font-medium text-primary-700 hover:text-primary-800"
+              >
+                Register
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>
