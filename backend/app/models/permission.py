@@ -3,9 +3,9 @@ from app.models.base import Base
 import enum
 
 class AccessLevel(str, enum.Enum):
-    NONE = "none"
-    SELF = "self"
-    ALL = "all"
+    NONE = "NONE"
+    SELF = "SELF"
+    ALL = "ALL"
 
 class Permission(Base):
     __tablename__ = "role_permissions"

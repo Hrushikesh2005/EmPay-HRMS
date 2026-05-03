@@ -8,6 +8,7 @@ from app.models.employee import EmployeeProfile
 from app.models.attendance import AttendanceLog
 from app.models.leave_request import LeaveRequest
 from app.models.enums import LeaveRequestStatus
+from app.models.department import Department
 
 router = APIRouter(prefix="/stats", tags=["Statistics"])
 
@@ -64,9 +65,9 @@ def get_dashboard_stats(
         })
         
     dept_rows = db.query(
-        EmployeeProfile.department,
+        func.coalesce(Department.name, "Unassigned"),
         func.count(EmployeeProfile.id).label("total")
-    ).group_by(EmployeeProfile.department).all()
+    ).outerjoin(Department, EmployeeProfile.department_id == Department.id).group_by(func.coalesce(Department.name, "Unassigned")).all()
 
     return {
         "total_headcount": total_headcount,

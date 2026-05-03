@@ -51,7 +51,7 @@ export default function useRealtime(onMessage) {
       return () => {
         try {
           ws.close();
-        } catch (e) {}
+        } catch (e) { }
       };
     } catch (err) {
       // fail silently

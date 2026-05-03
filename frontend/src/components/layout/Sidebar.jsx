@@ -36,7 +36,7 @@ export default function Sidebar() {
 
     return ALL_NAV_ITEMS.filter((item) => {
       const perm = (auth?.permissions || []).find((p) => p.module === item.module);
-      return perm && perm.access_level !== "none";
+      return perm && perm.access_level?.toLowerCase() !== "none";
     });
   }, [role, auth?.permissions]);
 
