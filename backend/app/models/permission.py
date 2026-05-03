@@ -13,6 +13,12 @@ class Permission(Base):
     id = Column(String, primary_key=True, index=True)
     role = Column(String, index=True, nullable=False)
     module = Column(String, index=True, nullable=False)
-    access_level = Column(Enum(AccessLevel), default=AccessLevel.NONE)
+    access_level = Column(
+        Enum(
+            AccessLevel,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        default=AccessLevel.NONE,
+    )
     can_edit = Column(Boolean, default=False)
     can_delete = Column(Boolean, default=False)

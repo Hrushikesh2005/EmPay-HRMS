@@ -17,7 +17,6 @@ import Settings from "./pages/Settings.jsx";
 import ForcePasswordChange from "./pages/ForcePasswordChange.jsx";
 import { Toaster } from "react-hot-toast";
 
-
 function App() {
   return (
     <BrowserRouter>
@@ -67,7 +66,14 @@ function App() {
           </Route>
 
           {/* Payroll */}
-          <Route element={<RoleBasedRoute module="payroll" />}>
+          <Route
+            element={
+              <RoleBasedRoute
+                module="payroll"
+                allowedRoles={["admin", "payroll_officer"]}
+              />
+            }
+          >
             <Route path="/payroll" element={<Payroll />} />
             <Route path="/payroll-wizard" element={<PayrollWizard />} />
           </Route>

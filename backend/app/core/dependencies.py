@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
@@ -57,7 +58,7 @@ def require_payroll(current_user: User = Depends(require_roles("payroll_officer"
 def require_permission(
 	module: str, action: str = "view", required_level: str = "self"
 ):
-	from app.models.permission import Permission, AccessLevel
+	level_map = {"none": 0, "self": 1, "all": 2}
 
 	def _checker(
 		current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
@@ -69,11 +70,17 @@ def require_permission(
 		if role_str == "admin":
 			return current_user
 
-		perm = (
-			db.query(Permission)
-			.filter(Permission.role == role_str, Permission.module == module)
-			.first()
-		)
+		perm = db.execute(
+			text(
+				"""
+				SELECT role, module, access_level::text AS access_level, can_edit, can_delete
+				FROM role_permissions
+				WHERE role = :role AND module = :module
+				LIMIT 1
+				"""
+			),
+			{"role": role_str, "module": module},
+		).mappings().first()
 
 		if not perm:
 			raise HTTPException(
@@ -81,8 +88,7 @@ def require_permission(
 			)
 
 		# Check Access Level (none < self < all)
-		level_map = {"none": 0, "self": 1, "all": 2}
-		user_level = level_map.get(perm.access_level.value, 0)
+		user_level = level_map.get(str(perm["access_level"]).lower(), 0)
 		required_lvl = level_map.get(required_level, 1)
 
 		if user_level < required_lvl:
@@ -91,12 +97,12 @@ def require_permission(
 				detail=f"Insufficient access level for {module}",
 			)
 
-		if action == "edit" and not perm.can_edit:
+		if action == "edit" and not perm["can_edit"]:
 			raise HTTPException(
 				status_code=status.HTTP_403_FORBIDDEN,
 				detail="You do not have permission to edit this module",
 			)
-		if action == "delete" and not perm.can_delete:
+		if action == "delete" and not perm["can_delete"]:
 			raise HTTPException(
 				status_code=status.HTTP_403_FORBIDDEN,
 				detail="You do not have permission to delete from this module",

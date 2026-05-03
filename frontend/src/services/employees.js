@@ -5,6 +5,11 @@ export async function fetchEmployees() {
   return response.data;
 }
 
+export async function fetchMyEmployeeProfile() {
+  const response = await api.get("/employees/me");
+  return response.data;
+}
+
 export async function fetchEmployeeSalary(employeeId) {
   const response = await api.get(`/employees/${employeeId}/salary`);
   return response.data;
@@ -24,6 +29,8 @@ export async function changeUserPassword(userId, currentPassword, newPassword) {
 }
 
 export const allocateInitialLeaves = async (employeeId) => {
-  const response = await api.post(`/leave-balances/allocate-initial/${employeeId}`);
+  const response = await api.post(
+    `/leave-balances/allocate-initial/${employeeId}`,
+  );
   return response.data;
 };

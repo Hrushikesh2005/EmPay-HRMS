@@ -1,7 +1,17 @@
-import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
-import useAuth from '../hooks/useAuth';
+import React from "react";
+import { Navigate, Outlet } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import useAuth from "../hooks/useAuth";
+
+const DEFAULT_MODULE_ACCESS = {
+  dashboard: ["admin", "hr_officer", "payroll_officer", "employee"],
+  attendance: ["admin", "hr_officer", "payroll_officer", "employee"],
+  leave: ["admin", "hr_officer", "payroll_officer", "employee"],
+  payroll: ["admin", "payroll_officer", "employee"],
+  reports: ["admin", "hr_officer", "payroll_officer"],
+  settings: ["admin"],
+  directory: ["admin", "hr_officer", "payroll_officer"],
+};
 
 const RoleBasedRoute = ({ module, action = "view", allowedRoles }) => {
   const { role, permissions, isAuthenticated, permissionsLoading } = useAuth();
@@ -29,7 +39,18 @@ const RoleBasedRoute = ({ module, action = "view", allowedRoles }) => {
   // Module permission check
   if (module) {
     const perm = permissions.find((p) => p.module === module);
-    if (!perm || perm.access_level === "none") {
+    const fallbackRoles = DEFAULT_MODULE_ACCESS[module] || [];
+    const hasDefaultAccess = fallbackRoles.includes(role);
+
+    if (!perm) {
+      return hasDefaultAccess ? (
+        <Outlet />
+      ) : (
+        <Navigate to="/unauthorized" replace />
+      );
+    }
+
+    if (perm.access_level === "none") {
       return <Navigate to="/unauthorized" replace />;
     }
 

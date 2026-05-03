@@ -1,20 +1,55 @@
+from datetime import date
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.employee import EmployeeProfile
+from app.models.attendance import AttendanceLog
+from app.models.leave_request import LeaveRequest
+from app.models.enums import AttendanceStatus, LeaveRequestStatus
 from app.models.salary import SalaryStructure
 from app.models.user import User
 from app.models.base import new_uuid
 
 
+def _attach_attendance_status(employee: EmployeeProfile, db: Session) -> EmployeeProfile:
+	today = date.today()
+	attendance = (
+		db.query(AttendanceLog)
+		.filter(AttendanceLog.employee_id == employee.id, AttendanceLog.work_date == today)
+		.first()
+	)
+	on_leave = (
+		db.query(LeaveRequest.id)
+		.filter(
+			LeaveRequest.employee_id == employee.id,
+			LeaveRequest.status == LeaveRequestStatus.approved,
+			LeaveRequest.start_date <= today,
+			LeaveRequest.end_date >= today,
+		)
+		.first()
+		is not None
+	)
+
+	status = AttendanceStatus.absent
+	if attendance and attendance.check_in:
+		status = AttendanceStatus.present
+	elif on_leave:
+		status = AttendanceStatus.on_leave
+
+	setattr(employee, "attendance_status", status)
+	return employee
+
+
 def list_employees(db: Session) -> list[EmployeeProfile]:
-	return db.query(EmployeeProfile).join(User).order_by(User.full_name.asc()).all()
+	employees = db.query(EmployeeProfile).join(User).order_by(User.full_name.asc()).all()
+	return [_attach_attendance_status(employee, db) for employee in employees]
 
 
 def get_employee(employee_id: str, db: Session) -> EmployeeProfile:
 	employee = db.query(EmployeeProfile).filter(EmployeeProfile.id == employee_id).first()
 	if not employee:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
-	return employee
+	return _attach_attendance_status(employee, db)
 
 
 def create_employee_profile(data, db: Session) -> EmployeeProfile:

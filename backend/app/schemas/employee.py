@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel
-from app.models.enums import EmploymentType, UserRole
+from app.models.enums import AttendanceStatus, EmploymentType, UserRole
 
 
 class EmployeeProfileCreate(BaseModel):
@@ -41,6 +41,7 @@ class EmployeeProfileOut(BaseModel):
 	phone: Optional[str]
 	date_of_joining: Optional[date]
 	employment_type: EmploymentType
+	attendance_status: AttendanceStatus = AttendanceStatus.absent
 	user: EmployeeUserOut
 
 	class Config:

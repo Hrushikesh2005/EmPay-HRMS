@@ -26,7 +26,7 @@ def get_my_profile(
 	profile = db.query(EmployeeProfile).filter(EmployeeProfile.user_id == current_user.id).first()
 	if not profile:
 		raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee profile not found")
-	return profile
+	return get_employee(profile.id, db)
 
 
 @router.get("/{employee_id}", response_model=EmployeeProfileOut)

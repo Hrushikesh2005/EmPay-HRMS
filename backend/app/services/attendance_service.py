@@ -8,6 +8,24 @@ from app.models.base import new_uuid
 from app.models.user import User
 
 
+def _dispatch_realtime_payload(user_id: str, payload: dict) -> None:
+	try:
+		from anyio import from_thread
+
+		from_thread.run(manager.send_personal_message, user_id, payload)
+		from_thread.run(manager.broadcast, payload)
+		return
+	except Exception:
+		pass
+
+	try:
+		loop = asyncio.get_running_loop()
+		loop.create_task(manager.send_personal_message(user_id, payload))
+		loop.create_task(manager.broadcast(payload))
+	except Exception:
+		pass
+
+
 def _get_employee_profile(user: User, db: Session) -> EmployeeProfile:
 	profile = db.query(EmployeeProfile).filter(EmployeeProfile.user_id == user.id).first()
 	if not profile:
@@ -63,8 +81,7 @@ def check_in(user: User, remarks: str | None, db: Session) -> AttendanceLog:
 				"remarks": attendance.remarks,
 			},
 		}
-		# schedule async send
-		asyncio.create_task(manager.send_personal_message(user.id, payload))
+		_dispatch_realtime_payload(user.id, payload)
 	except Exception:
 		# don't let realtime errors break attendance flow
 		pass
@@ -109,7 +126,7 @@ def check_out(user: User, remarks: str | None, db: Session) -> AttendanceLog:
 				"remarks": attendance.remarks,
 			},
 		}
-		asyncio.create_task(manager.send_personal_message(user.id, payload))
+		_dispatch_realtime_payload(user.id, payload)
 	except Exception:
 		pass
 

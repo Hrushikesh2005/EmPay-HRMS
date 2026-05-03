@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.core.database import get_db
 from app.core.dependencies import require_admin, get_current_user
 from app.models.permission import Permission, AccessLevel
@@ -14,7 +15,18 @@ def get_my_permissions(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    return db.query(Permission).filter(Permission.role == current_user.role.value).all()
+    rows = db.execute(
+        text(
+            """
+            SELECT id, role, module, access_level::text AS access_level, can_edit, can_delete
+            FROM role_permissions
+            WHERE role = :role
+            ORDER BY module
+            """
+        ),
+        {"role": current_user.role.value},
+    ).mappings().all()
+    return [dict(row) for row in rows]
 
 @router.get("", response_model=List[PermissionOut])
 def list_all_permissions(
@@ -62,20 +74,14 @@ def seed_permissions_api(
     db: Session = Depends(get_db),
     current_user = Depends(require_admin)
 ):
-    # This is a one-time helper to fill defaults
     roles = ["admin", "hr_officer", "payroll_officer", "employee"]
     modules = ["dashboard", "directory", "attendance", "leave", "payroll", "reports", "settings"]
-    
-    existing = db.query(Permission).all()
-    if existing:
-        return {"message": "Permissions already exist"}
 
     for role in roles:
         for module in modules:
-            # Defaults
             level = AccessLevel.NONE
             edit = False
-            
+
             if role == "admin":
                 level = AccessLevel.ALL
                 edit = True
@@ -97,14 +103,27 @@ def seed_permissions_api(
                 elif module == "dashboard":
                     level = AccessLevel.ALL
 
-            p = Permission(
-                id=str(uuid.uuid4()),
-                role=role,
-                module=module,
-                access_level=level,
-                can_edit=edit
+            permission = (
+                db.query(Permission)
+                .filter(Permission.role == role, Permission.module == module)
+                .first()
             )
-            db.add(p)
-    
+
+            if permission:
+                permission.access_level = level
+                permission.can_edit = edit
+                permission.can_delete = False
+            else:
+                db.add(
+                    Permission(
+                        id=str(uuid.uuid4()),
+                        role=role,
+                        module=module,
+                        access_level=level,
+                        can_edit=edit,
+                        can_delete=False,
+                    )
+                )
+
     db.commit()
     return {"message": "Permissions seeded successfully"}

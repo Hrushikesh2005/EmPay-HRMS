@@ -1,12 +1,42 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, Plus, Filter, Plane } from "lucide-react";
 import { Button } from "../components/ui/Button";
 import { StatusBadge } from "../components/ui/StatusBadge";
 import { PageHeader } from "../components/ui/PageHeader";
 import { EmployeeProfileView } from "../components/ui/EmployeeProfileView";
 import { fetchEmployees } from "../services/employees";
 import useAuth from "../hooks/useAuth.js";
+import useRealtime from "../hooks/useRealtime.js";
+
+function AttendanceMarker({ status }) {
+  const normalized = (status || "absent").toLowerCase();
+
+  if (normalized === "present") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 border border-emerald-100">
+        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+        Present
+      </span>
+    );
+  }
+
+  if (normalized === "on_leave") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-2 py-1 text-[11px] font-semibold text-sky-700 border border-sky-100">
+        <Plane className="w-3 h-3" />
+        On Leave
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700 border border-amber-100">
+      <span className="w-2 h-2 rounded-full bg-amber-500" />
+      Absent
+    </span>
+  );
+}
 
 const AVATAR_COLORS = [
   "from-violet-500 to-purple-600",
@@ -59,6 +89,34 @@ export default function Directory() {
       isMounted = false;
     };
   }, []);
+
+  useRealtime((event) => {
+    if (event?.type === "attendance") {
+      fetchEmployees()
+        .then((data) => setEmployees(data || []))
+        .catch((err) => {
+          console.error("Failed to refresh employees", err);
+        });
+    }
+  });
+
+  // Auto-refresh the employee list every 3 s (background, no loading flash)
+  useEffect(() => {
+    let isMounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const data = await fetchEmployees();
+        if (isMounted) setEmployees(data || []);
+      } catch {
+        // silent — don't disrupt the UI on background refresh errors
+      }
+    }, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
 
   const filteredEmployees = useMemo(() => {
     const q = searchTerm.toLowerCase();
@@ -136,12 +194,16 @@ export default function Directory() {
               <button
                 key={emp.id}
                 onClick={() => setSelectedEmployee(emp)}
-                className="w-full text-left bg-white border border-slate-200 rounded-xl p-5 shadow-sm transition-all duration-200 group hover:shadow-md hover:-translate-y-0.5 hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                className="relative w-full text-left bg-white border border-slate-200 rounded-xl p-5 shadow-sm transition-all duration-200 group hover:shadow-md hover:-translate-y-0.5 hover:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400"
               >
+                <div className="absolute right-4 top-4">
+                  <AttendanceMarker status={emp.attendance_status} />
+                </div>
+
                 {/* Avatar + name */}
                 <div className="flex items-center gap-3 mb-3">
                   <div
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-base shrink-0 shadow`}
+                    className={`w-12 h-12 rounded-xl bg-linear-to-br ${color} flex items-center justify-center text-white font-bold text-base shrink-0 shadow`}
                   >
                     {getInitials(name)}
                   </div>

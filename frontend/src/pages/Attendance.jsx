@@ -137,6 +137,29 @@ export default function Attendance() {
     }
   });
 
+  // ── Auto-refresh the admin attendance table every 3 s ──────────────────
+  // Only updates allAttendance state — no full page re-render.
+  useEffect(() => {
+    if (role !== "admin") return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await api.get("/attendance/all", {
+          params: {
+            start_date: format(selectedDailyDate, "yyyy-MM-dd"),
+            end_date: format(selectedDailyDate, "yyyy-MM-dd"),
+          },
+        });
+        setAllAttendance(response.data || []);
+      } catch {
+        // silent — don't disrupt the UI on a background refresh error
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [role, selectedDailyDate]);
+
+
   const handleCheckIn = async () => {
     try {
       setActionLoading(true);

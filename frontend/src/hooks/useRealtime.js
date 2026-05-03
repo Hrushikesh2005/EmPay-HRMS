@@ -3,6 +3,11 @@ import { clearSessionTokens } from "../api/axios.js";
 
 export default function useRealtime(onMessage) {
   const wsRef = useRef(null);
+  const onMessageRef = useRef(onMessage);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -25,7 +30,7 @@ export default function useRealtime(onMessage) {
       ws.onmessage = (ev) => {
         try {
           const data = JSON.parse(ev.data);
-          onMessage && onMessage(data);
+          onMessageRef.current && onMessageRef.current(data);
         } catch (e) {
           // ignore
         }
@@ -51,5 +56,5 @@ export default function useRealtime(onMessage) {
     } catch (err) {
       // fail silently
     }
-  }, [onMessage]);
+  }, []);
 }
