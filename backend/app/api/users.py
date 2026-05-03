@@ -25,7 +25,7 @@ class OnboardEmployeeRequest(BaseModel):
     email: EmailStr
     full_name: str
     role: UserRole = UserRole.employee
-    department: str | None = None
+    department_id: str | None = None
     designation: str | None = None
     phone: str | None = None
     date_of_joining: date | None = None
@@ -80,7 +80,7 @@ def onboard_employee(
         id=new_uuid(),
         employee_code=employee_code,
         user_id=user.id,
-        department=data.department,
+        department_id=data.department_id,
         designation=data.designation,
         phone=data.phone,
         date_of_joining=data.date_of_joining,

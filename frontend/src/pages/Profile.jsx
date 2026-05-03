@@ -34,6 +34,7 @@ const AVATAR_COLORS = [
 const TABS = [
   { id: "resume", label: "Resume", icon: FileText },
   { id: "private", label: "Private Info", icon: Info },
+  { id: "salary", label: "Salary Info", icon: Briefcase },
   { id: "security", label: "Security", icon: Lock },
 ];
 
@@ -175,32 +176,38 @@ function ResumeTab({ profile, user }) {
 // ─── Tab: Private Info ────────────────────────────────────────────────────────
 
 function PrivateInfoTab({ profile, user }) {
-  const rows = [
-    { icon: Hash, label: "Employee ID", value: profile?.id },
+  const generalRows = [
+    { icon: Hash, label: "Employee ID", value: profile?.employee_code },
     { icon: Users, label: "Full Name", value: user?.full_name },
-    { icon: Mail, label: "Email", value: user?.email },
+    { icon: Mail, label: "Work Email", value: user?.email },
+    { icon: Mail, label: "Personal Email", value: profile?.personal_email },
     { icon: Phone, label: "Mobile", value: profile?.phone },
-    { icon: Building2, label: "Department", value: profile?.department },
-    { icon: Briefcase, label: "Designation", value: profile?.designation },
-    {
-      icon: Users,
-      label: "Employment",
-      value: profile?.employment_type?.replace(/_/g, " "),
-    },
-    {
-      icon: Calendar,
-      label: "Joined On",
-      value: formatDate(profile?.date_of_joining),
-    },
-    {
-      icon: Shield,
-      label: "System Role",
-      value: user?.role?.replace(/_/g, " "),
-    },
+    { icon: Calendar, label: "Date of Birth", value: formatDate(profile?.date_of_birth) },
+    { icon: Users, label: "Gender", value: profile?.gender },
+    { icon: Users, label: "Marital Status", value: profile?.marital_status },
+    { icon: Info, label: "Nationality", value: profile?.nationality },
   ];
 
-  return (
-    <div className="max-w-2xl">
+  const workRows = [
+    { icon: Building2, label: "Department", value: profile?.department },
+    { icon: Briefcase, label: "Designation", value: profile?.designation },
+    { icon: Users, label: "Employment", value: profile?.employment_type?.replace(/_/g, " ") },
+    { icon: Calendar, label: "Joined On", value: formatDate(profile?.date_of_joining) },
+    { icon: Shield, label: "System Role", value: user?.role?.replace(/_/g, " ") },
+  ];
+
+  const addressRows = [
+    { icon: Building2, label: "Address", value: profile?.residing_address },
+  ];
+
+  const statutoryRows = [
+    { icon: Hash, label: "PAN Number", value: profile?.pan_number },
+    { icon: Hash, label: "UAN Number", value: profile?.uan_number },
+  ];
+
+  const renderSection = (title, rows) => (
+    <div className="mb-6">
+      <h3 className="text-sm font-semibold text-slate-800 mb-3 ml-2">{title}</h3>
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         {rows.map(({ icon: Icon, label, value }, i) => (
           <div
@@ -213,11 +220,62 @@ function PrivateInfoTab({ profile, user }) {
             <span className="text-sm text-slate-400 font-medium w-32 shrink-0">
               {label}
             </span>
-            <span className="text-sm text-slate-800 font-medium truncate capitalize">
+            <span className="text-sm text-slate-800 font-medium truncate">
               {value || "—"}
             </span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="max-w-3xl">
+      {renderSection("General Information", generalRows)}
+      {renderSection("Work Information", workRows)}
+      {renderSection("Contact & Address", addressRows)}
+      {renderSection("Statutory Info", statutoryRows)}
+    </div>
+  );
+}
+
+// ─── Tab: Salary Info ─────────────────────────────────────────────────────────
+
+function SalaryTab({ profile }) {
+  const bankDetails = profile?.bank_details || {};
+  
+  const bankRows = [
+    { label: "Account Name", value: bankDetails.account_name },
+    { label: "Bank Name", value: bankDetails.bank_name },
+    { label: "Account Number", value: bankDetails.account_number },
+    { label: "IFSC Code", value: bankDetails.ifsc_code },
+  ];
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h3 className="text-sm font-semibold text-slate-800 mb-3 ml-2">Bank Details</h3>
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          {bankRows.map(({ label, value }, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-slate-50/60 transition-colors"
+            >
+              <span className="text-sm text-slate-400 font-medium w-32 shrink-0">
+                {label}
+              </span>
+              <span className="text-sm text-slate-800 font-medium truncate uppercase">
+                {value || "—"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+        <p className="text-sm text-slate-600">
+          <strong>Note:</strong> Your detailed salary structure is managed by the payroll team. If you need to update your bank details, please contact HR.
+        </p>
       </div>
     </div>
   );
@@ -477,6 +535,9 @@ export default function Profile() {
         )}
         {activeTab === "private" && (
           <PrivateInfoTab profile={profile} user={user} />
+        )}
+        {activeTab === "salary" && (
+          <SalaryTab profile={profile} />
         )}
         {activeTab === "security" && <SecurityTab user={user} />}
       </div>

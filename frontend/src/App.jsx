@@ -14,6 +14,7 @@ import Payroll from "./pages/Payroll.jsx";
 import PayrollWizard from "./pages/PayrollWizard.jsx";
 import Reports from "./pages/Reports.jsx";
 import Settings from "./pages/Settings.jsx";
+import Departments from "./pages/Departments.jsx";
 import ForcePasswordChange from "./pages/ForcePasswordChange.jsx";
 import { Toaster } from "react-hot-toast";
 
@@ -86,6 +87,7 @@ function App() {
           {/* Settings */}
           <Route element={<RoleBasedRoute module="settings" />}>
             <Route path="/settings" element={<Settings />} />
+            <Route path="/departments" element={<Departments />} />
           </Route>
         </Route>
 

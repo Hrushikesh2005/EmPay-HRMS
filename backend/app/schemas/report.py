@@ -20,3 +20,14 @@ class LeaveSummaryStats(BaseModel):
     employees_on_leave_today: int
     total_pending_requests: int
     total_approved_this_month: int
+
+class AttendanceReportRow(BaseModel):
+    employee_id: str
+    employee_name: str
+    department: str | None
+    present_days: int
+    absent_days: int
+    late_days: int
+    half_days: int
+
+    model_config = ConfigDict(from_attributes=True)

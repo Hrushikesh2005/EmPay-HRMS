@@ -7,19 +7,39 @@ from app.models.enums import AttendanceStatus, EmploymentType, UserRole
 
 class EmployeeProfileCreate(BaseModel):
 	user_id: str
-	department: Optional[str] = None
+	department_id: Optional[str] = None
 	designation: Optional[str] = None
 	phone: Optional[str] = None
 	date_of_joining: Optional[date] = None
 	employment_type: EmploymentType = EmploymentType.full_time
 
+	date_of_birth: Optional[date] = None
+	residing_address: Optional[str] = None
+	nationality: Optional[str] = None
+	personal_email: Optional[str] = None
+	gender: Optional[str] = None
+	marital_status: Optional[str] = None
+	pan_number: Optional[str] = None
+	uan_number: Optional[str] = None
+	bank_details: Optional[dict] = None
+
 
 class EmployeeProfileUpdate(BaseModel):
-	department: Optional[str] = None
+	department_id: Optional[str] = None
 	designation: Optional[str] = None
 	phone: Optional[str] = None
 	date_of_joining: Optional[date] = None
 	employment_type: Optional[EmploymentType] = None
+
+	date_of_birth: Optional[date] = None
+	residing_address: Optional[str] = None
+	nationality: Optional[str] = None
+	personal_email: Optional[str] = None
+	gender: Optional[str] = None
+	marital_status: Optional[str] = None
+	pan_number: Optional[str] = None
+	uan_number: Optional[str] = None
+	bank_details: Optional[dict] = None
 
 
 class EmployeeUserOut(BaseModel):
@@ -36,12 +56,22 @@ class EmployeeProfileOut(BaseModel):
 	id: str
 	employee_code: Optional[str]
 	user_id: str
-	department: Optional[str]
+	department_id: Optional[str]
 	designation: Optional[str]
 	phone: Optional[str]
 	date_of_joining: Optional[date]
 	employment_type: EmploymentType
 	attendance_status: AttendanceStatus = AttendanceStatus.absent
+
+	date_of_birth: Optional[date] = None
+	residing_address: Optional[str] = None
+	nationality: Optional[str] = None
+	personal_email: Optional[str] = None
+	gender: Optional[str] = None
+	marital_status: Optional[str] = None
+	pan_number: Optional[str] = None
+	uan_number: Optional[str] = None
+	bank_details: Optional[dict] = None
 	user: EmployeeUserOut
 
 	class Config:

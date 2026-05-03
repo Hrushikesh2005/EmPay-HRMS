@@ -21,6 +21,7 @@ const ALL_NAV_ITEMS = [
   { name: "Leave", href: "/leave", icon: Calendar, module: "leave" },
   { name: "Payroll", href: "/payroll", icon: CreditCard, module: "payroll" },
   { name: "Reports", href: "/reports", icon: BarChart3, module: "reports" },
+  { name: "Departments", href: "/departments", icon: Building2, module: "settings" },
   { name: "Settings", href: "/settings", icon: Settings, module: "settings" },
 ];
 

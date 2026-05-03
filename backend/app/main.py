@@ -24,6 +24,7 @@ from app.api.admin_payroll import router as admin_payroll_router
 from app.api.admin_reports import router as admin_reports_router
 from app.api.admin_dashboard import router as admin_dashboard_router
 from app.api.payroll import router as payroll_wizard_router
+from app.api.departments import router as departments_router
 
 app = FastAPI(title="EmPay HRMS API")
 
@@ -51,6 +52,7 @@ app.include_router(admin_payroll_router, prefix="/api/v1")
 app.include_router(admin_reports_router, prefix="/api/v1")
 app.include_router(admin_dashboard_router, prefix="/api/v1")
 app.include_router(payroll_wizard_router, prefix="/api/v1")
+app.include_router(departments_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["health"])

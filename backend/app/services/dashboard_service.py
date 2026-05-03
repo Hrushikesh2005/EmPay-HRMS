@@ -55,7 +55,7 @@ def get_admin_dashboard_stats(db: Session) -> AdminDashboardStats:
         Payrun.created_at.desc()
     ).first()
     
-    last_payrun_label = last_payrun.label if last_payrun else None
+    last_payrun_label = last_payrun.period_label if last_payrun else None
     last_payrun_status = last_payrun.status.value if last_payrun else None
     last_payrun_date = last_payrun.created_at if last_payrun else None
     

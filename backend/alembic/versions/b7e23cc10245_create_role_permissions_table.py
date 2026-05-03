@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'b7e23cc10245'
@@ -24,7 +24,7 @@ def upgrade() -> None:
     sa.Column('id', sa.String(), nullable=False),
     sa.Column('role', sa.String(), nullable=False),
     sa.Column('module', sa.String(), nullable=False),
-    sa.Column('access_level', sa.Enum('NONE', 'SELF', 'ALL', name='accesslevel'), nullable=True),
+    sa.Column('access_level', postgresql.ENUM('NONE', 'SELF', 'ALL', name='accesslevel', create_type=False), nullable=True),
     sa.Column('can_edit', sa.Boolean(), nullable=True),
     sa.Column('can_delete', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')

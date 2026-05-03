@@ -146,12 +146,20 @@ def list_payslips_for_payrun(
             select(EmployeeProfile).where(EmployeeProfile.id == payslip.employee_id)
         ).scalar_one_or_none()
 
-        # Create a dict to serialize
         payslip_dict = {
             "id": payslip.id,
             "payrun_id": payslip.payrun_id,
             "employee_id": payslip.employee_id,
             "employee_name": employee.user.full_name if employee and employee.user else "",
+            "employee_code": employee.employee_code if employee else None,
+            "department": employee.department_rel.name if employee and employee.department_rel else None,
+            "designation": employee.designation if employee else None,
+            "date_of_joining": employee.date_of_joining if employee else None,
+            "pan_number": employee.pan_number if employee else None,
+            "uan_number": employee.uan_number if employee else None,
+            "bank_details": employee.bank_details if employee else None,
+            "pay_period": payrun.period_label if payrun else None,
+            "pay_date": payrun.created_at if payrun else None,
             "basic_salary": payslip.basic_salary,
             "hra": payslip.hra,
             "other_allowances": payslip.other_allowances,
@@ -196,12 +204,26 @@ def get_payslip(
         select(EmployeeProfile).where(EmployeeProfile.id == payslip.employee_id)
     ).scalar_one_or_none()
 
+    # Get payrun for extra info
+    payrun = db.execute(
+        select(Payrun).where(Payrun.id == payslip.payrun_id)
+    ).scalar_one_or_none()
+
     # Create a dict to serialize
     payslip_dict = {
         "id": payslip.id,
         "payrun_id": payslip.payrun_id,
         "employee_id": payslip.employee_id,
         "employee_name": employee.user.full_name if employee and employee.user else "",
+        "employee_code": employee.employee_code if employee else None,
+        "department": employee.department_rel.name if employee and employee.department_rel else None,
+        "designation": employee.designation if employee else None,
+        "date_of_joining": employee.date_of_joining if employee else None,
+        "pan_number": employee.pan_number if employee else None,
+        "uan_number": employee.uan_number if employee else None,
+        "bank_details": employee.bank_details if employee else None,
+        "pay_period": payrun.period_label if payrun else None,
+        "pay_date": payrun.created_at if payrun else None,
         "basic_salary": payslip.basic_salary,
         "hra": payslip.hra,
         "other_allowances": payslip.other_allowances,

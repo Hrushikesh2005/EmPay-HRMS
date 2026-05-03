@@ -17,13 +17,14 @@ from app.models.leave_balance import LeaveBalance
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
 from app.models.user import User
-from app.schemas.report import LeaveReportRow, LeaveSummaryStats
+from app.models.department import Department
+from app.schemas.report import LeaveReportRow, LeaveSummaryStats, AttendanceReportRow
 
 
 def get_leave_report(
     db: Session,
     year: int,
-    department: str | None = None,
+    department_id: str | None = None,
     leave_type_id: str | None = None,
     employee_id: str | None = None,
 ) -> list[LeaveReportRow]:
@@ -35,7 +36,7 @@ def get_leave_report(
     Args:
         db: Database session
         year: Year to filter balances by
-        department: Optional department filter
+        department_id: Optional department ID filter
         leave_type_id: Optional leave type filter
         employee_id: Optional employee filter
 
@@ -47,7 +48,7 @@ def get_leave_report(
         select(
             LeaveBalance.employee_id,
             User.full_name,
-            EmployeeProfile.department,
+            Department.name,
             LeaveType.name,
             LeaveBalance.allocated_days,
             LeaveBalance.used_days,
@@ -59,13 +60,14 @@ def get_leave_report(
             LeaveBalance.employee_id == EmployeeProfile.id,
         )
         .join(User, EmployeeProfile.user_id == User.id)
+        .outerjoin(Department, EmployeeProfile.department_id == Department.id)
         .join(LeaveType, LeaveBalance.leave_type_id == LeaveType.id)
         .where(LeaveBalance.year == year)
     )
 
     # Apply optional filters
-    if department:
-        stmt = stmt.where(EmployeeProfile.department == department)
+    if department_id:
+        stmt = stmt.where(EmployeeProfile.department_id == department_id)
 
     if leave_type_id:
         stmt = stmt.where(LeaveBalance.leave_type_id == leave_type_id)
@@ -172,7 +174,7 @@ def get_leave_summary_stats(db: Session) -> LeaveSummaryStats:
 def export_leave_report_csv(
     db: Session,
     year: int,
-    department: str | None = None,
+    department_id: str | None = None,
 ) -> str:
     """Export leave report as CSV string.
 
@@ -181,13 +183,13 @@ def export_leave_report_csv(
     Args:
         db: Database session
         year: Year to report on
-        department: Optional department filter
+        department_id: Optional department ID filter
 
     Returns:
         CSV string
     """
     # Get report data
-    report_rows = get_leave_report(db, year, department=department)
+    report_rows = get_leave_report(db, year, department_id=department_id)
 
     # Create CSV in memory
     output = StringIO()
@@ -221,3 +223,79 @@ def export_leave_report_csv(
         )
 
     return output.getvalue()
+
+
+def get_attendance_report(
+    db: Session,
+    month: int,
+    year: int,
+    department_id: str | None = None,
+    employee_id: str | None = None,
+) -> list[AttendanceReportRow]:
+    """Get detailed attendance report for a specific month and year.
+
+    Args:
+        db: Database session
+        month: Month to filter
+        year: Year to filter
+        department_id: Optional department ID filter
+        employee_id: Optional employee filter
+
+    Returns:
+        List of AttendanceReportRow
+    """
+    from app.models.attendance import AttendanceLog
+    from app.models.enums import AttendanceStatus
+    from sqlalchemy import case
+    
+    # Calculate counts using conditional aggregation
+    present_count = func.sum(case((AttendanceLog.status == AttendanceStatus.present, 1), else_=0))
+    absent_count = func.sum(case((AttendanceLog.status == AttendanceStatus.absent, 1), else_=0))
+    half_day_count = func.sum(case((AttendanceLog.status == AttendanceStatus.half_day, 1), else_=0))
+    
+    stmt = (
+        select(
+            EmployeeProfile.id,
+            User.full_name,
+            Department.name,
+            present_count.label("present_days"),
+            absent_count.label("absent_days"),
+            half_day_count.label("half_days"),
+        )
+        .join(User, EmployeeProfile.user_id == User.id)
+        .outerjoin(Department, EmployeeProfile.department_id == Department.id)
+        .outerjoin(
+            AttendanceLog, 
+            and_(
+                AttendanceLog.employee_id == EmployeeProfile.id,
+                extract("month", AttendanceLog.work_date) == month,
+                extract("year", AttendanceLog.work_date) == year
+            )
+        )
+        .group_by(EmployeeProfile.id, User.full_name, Department.name)
+        .order_by(User.full_name)
+    )
+
+    if department_id:
+        stmt = stmt.where(EmployeeProfile.department_id == department_id)
+
+    if employee_id:
+        stmt = stmt.where(EmployeeProfile.id == employee_id)
+
+    results = db.execute(stmt).all()
+
+    report_rows = []
+    for row in results:
+        report_rows.append(
+            AttendanceReportRow(
+                employee_id=row.id,
+                employee_name=row.full_name,
+                department=row.name,
+                present_days=int(row.present_days or 0),
+                absent_days=int(row.absent_days or 0),
+                late_days=0, # Late tracking can be added in the future based on check_in time
+                half_days=int(row.half_days or 0),
+            )
+        )
+
+    return report_rows

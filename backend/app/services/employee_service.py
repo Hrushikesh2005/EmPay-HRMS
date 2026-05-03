@@ -64,11 +64,20 @@ def create_employee_profile(data, db: Session) -> EmployeeProfile:
 	employee = EmployeeProfile(
 		id=new_uuid(),
 		user_id=data.user_id,
-		department=data.department,
+		department_id=data.department_id,
 		designation=data.designation,
 		phone=data.phone,
 		date_of_joining=data.date_of_joining,
 		employment_type=data.employment_type,
+		date_of_birth=data.date_of_birth,
+		residing_address=data.residing_address,
+		nationality=data.nationality,
+		personal_email=data.personal_email,
+		gender=data.gender,
+		marital_status=data.marital_status,
+		pan_number=data.pan_number,
+		uan_number=data.uan_number,
+		bank_details=data.bank_details,
 	)
 	db.add(employee)
 	db.commit()
@@ -79,8 +88,8 @@ def create_employee_profile(data, db: Session) -> EmployeeProfile:
 def update_employee(employee_id: str, data, db: Session) -> EmployeeProfile:
 	employee = get_employee(employee_id, db)
 
-	if data.department is not None:
-		employee.department = data.department
+	if data.department_id is not None:
+		employee.department_id = data.department_id
 	if data.designation is not None:
 		employee.designation = data.designation
 	if data.phone is not None:
@@ -89,6 +98,24 @@ def update_employee(employee_id: str, data, db: Session) -> EmployeeProfile:
 		employee.date_of_joining = data.date_of_joining
 	if data.employment_type is not None:
 		employee.employment_type = data.employment_type
+	if data.date_of_birth is not None:
+		employee.date_of_birth = data.date_of_birth
+	if data.residing_address is not None:
+		employee.residing_address = data.residing_address
+	if data.nationality is not None:
+		employee.nationality = data.nationality
+	if data.personal_email is not None:
+		employee.personal_email = data.personal_email
+	if data.gender is not None:
+		employee.gender = data.gender
+	if data.marital_status is not None:
+		employee.marital_status = data.marital_status
+	if data.pan_number is not None:
+		employee.pan_number = data.pan_number
+	if data.uan_number is not None:
+		employee.uan_number = data.uan_number
+	if data.bank_details is not None:
+		employee.bank_details = data.bank_details
 
 	db.commit()
 	db.refresh(employee)

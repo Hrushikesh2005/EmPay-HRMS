@@ -1,6 +1,7 @@
 from app.models.base import Base
 from app.models.enums import *
 from app.models.user import User
+from app.models.department import Department
 from app.models.employee import EmployeeProfile
 from app.models.salary import SalaryStructure
 from app.models.attendance import AttendanceLog

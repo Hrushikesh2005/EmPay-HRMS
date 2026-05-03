@@ -23,11 +23,11 @@ def seed_payroll_test():
 
         # 1. Get the employee user
         user = db.execute(
-            select(User).where(User.email == "employee@empay.local")
+            select(User).where(User.email == "emp1@empay.com")
         ).scalar_one_or_none()
 
         if not user:
-            print("Error: User employee@empay.local not found. Run seed.py first.")
+            print("Error: User emp1@empay.com not found. Run seed.py first.")
             return
 
         print(f"Found user: {user.email} (ID: {user.id})")

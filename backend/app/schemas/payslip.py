@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
@@ -9,6 +9,15 @@ class PayslipResponse(BaseModel):
     payrun_id: str
     employee_id: str
     employee_name: str
+    employee_code: str | None = None
+    department: str | None = None
+    designation: str | None = None
+    date_of_joining: date | None = None
+    pan_number: str | None = None
+    uan_number: str | None = None
+    bank_details: dict | None = None
+    pay_period: str | None = None
+    pay_date: datetime | None = None
     basic_salary: Decimal
     hra: Decimal
     other_allowances: Decimal

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { UserPlus, Building2, Phone, Briefcase, ShieldCheck } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
@@ -44,6 +44,19 @@ export default function Register() {
   const [submitError, setSubmitError] = useState('')
   const [successData, setSuccessData] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [departments, setDepartments] = useState([])
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const res = await api.get('/departments')
+        setDepartments(res.data)
+      } catch (err) {
+        console.error('Failed to load departments', err)
+      }
+    }
+    fetchDepartments()
+  }, [])
 
   const canSubmit = useMemo(() => Object.keys(validate(form)).length === 0, [form])
 
@@ -70,7 +83,7 @@ export default function Register() {
         full_name: form.fullName,
         email: form.email,
         role: form.role,
-        department: form.department || null,
+        department_id: form.department || null,
         designation: form.designation || null,
         phone: form.phone || null,
         date_of_joining: form.dateOfJoining,
@@ -199,12 +212,21 @@ export default function Register() {
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <Input 
-                  label="Department" 
-                  value={form.department} 
-                  onChange={handleChange('department')} 
-                  placeholder="e.g. Engineering" 
-                />
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-slate-700">Department</label>
+                  <select
+                    value={form.department}
+                    onChange={handleChange('department')}
+                    className="w-full h-10 px-3 rounded-md border border-slate-300 bg-white text-sm focus:ring-2 focus:ring-primary-500 outline-none"
+                  >
+                    <option value="">Select Department...</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <Input 
                   label="Designation" 
                   value={form.designation} 

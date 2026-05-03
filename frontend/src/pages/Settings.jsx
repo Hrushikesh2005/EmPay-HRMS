@@ -157,17 +157,9 @@ export default function Settings() {
       header: "Role",
       accessor: "role",
       render: (row) => (
-        <select
-          value={row.role}
-          onChange={(e) => handleRoleChange(row, e.target.value)}
-          className="text-xs border rounded px-1 py-1"
-          disabled={savingUserId === row.id}
-        >
-          <option value="employee">Employee</option>
-          <option value="hr_officer">HR Officer</option>
-          <option value="payroll_officer">Payroll Officer</option>
-          <option value="admin">Admin</option>
-        </select>
+        <span className="text-xs font-medium capitalize text-slate-700">
+          {row.role?.replace("_", " ")}
+        </span>
       ),
     },
     { header: "Status", accessor: "is_active", render: (row) => <StatusPill active={row.is_active} /> },
