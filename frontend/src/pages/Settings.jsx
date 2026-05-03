@@ -284,9 +284,9 @@ export default function Settings() {
                                 disabled={roleName === "admin"}
                                 className={`border rounded px-2 py-1 text-xs bg-white ${isChanged ? "border-primary-300" : ""}`}
                               >
-                                <option value="none">None</option>
-                                <option value="self">Self Only</option>
-                                <option value="all">Full Company</option>
+                                <option value="NONE">None</option>
+                                <option value="SELF">Self Only</option>
+                                <option value="ALL">Full Company</option>
                               </select>
                             </td>
                             <td className="px-4 py-3 text-center">

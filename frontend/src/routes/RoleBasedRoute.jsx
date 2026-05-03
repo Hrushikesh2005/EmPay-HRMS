@@ -7,8 +7,8 @@ const DEFAULT_MODULE_ACCESS = {
   dashboard: ["admin", "hr_officer", "payroll_officer", "employee"],
   attendance: ["admin", "hr_officer", "payroll_officer", "employee"],
   leave: ["admin", "hr_officer", "payroll_officer", "employee"],
-  payroll: ["admin", "payroll_officer", "employee"],
-  reports: ["admin", "hr_officer", "payroll_officer"],
+  payroll: ["admin", "payroll_officer"],
+  reports: ["admin"],
   settings: ["admin"],
   directory: ["admin", "hr_officer", "payroll_officer"],
 };

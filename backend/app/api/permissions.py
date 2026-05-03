@@ -15,17 +15,36 @@ def get_my_permissions(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    rows = db.execute(
-        text(
-            """
-            SELECT id, role, module, access_level::text AS access_level, can_edit, can_delete
-            FROM role_permissions
-            WHERE role = :role
-            ORDER BY module
-            """
-        ),
-        {"role": current_user.role.value},
-    ).mappings().all()
+    if current_user.role.value in {"employee", "hr_officer"}:
+        if current_user.role.value == "hr_officer":
+            excluded_clause = "AND module NOT IN ('directory', 'payroll', 'reports')"
+        else:
+            excluded_clause = "AND module NOT IN ('directory', 'payroll')"
+        rows = db.execute(
+            text(
+                """
+                SELECT id, role, module, access_level::text AS access_level, can_edit, can_delete
+                FROM role_permissions
+                WHERE role = :role
+                  {excluded_clause}
+                ORDER BY module
+                """
+                .format(excluded_clause=excluded_clause)
+            ),
+            {"role": current_user.role.value},
+        ).mappings().all()
+    else:
+        rows = db.execute(
+            text(
+                """
+                SELECT id, role, module, access_level::text AS access_level, can_edit, can_delete
+                FROM role_permissions
+                WHERE role = :role
+                ORDER BY module
+                """
+            ),
+            {"role": current_user.role.value},
+        ).mappings().all()
     return [dict(row) for row in rows]
 
 @router.get("", response_model=List[PermissionOut])
@@ -91,6 +110,8 @@ def seed_permissions_api(
                     edit = True
                 elif module == "dashboard":
                     level = AccessLevel.ALL
+                elif module in ["payroll", "reports"]:
+                    level = AccessLevel.NONE
             elif role == "payroll_officer":
                 if module == "payroll":
                     level = AccessLevel.ALL
@@ -98,7 +119,7 @@ def seed_permissions_api(
                 elif module in ["dashboard", "directory"]:
                     level = AccessLevel.ALL
             elif role == "employee":
-                if module in ["attendance", "leave", "payroll"]:
+                if module in ["attendance", "leave"]:
                     level = AccessLevel.SELF
                 elif module == "dashboard":
                     level = AccessLevel.ALL

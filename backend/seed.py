@@ -200,8 +200,8 @@ def seed_database(db: Session):
             "directory": (AccessLevel.ALL, True, False),
             "attendance": (AccessLevel.ALL, True, False),
             "leave": (AccessLevel.ALL, True, False),
-            "payroll": (AccessLevel.SELF, False, False),
-            "reports": (AccessLevel.ALL, False, False),
+            "payroll": (AccessLevel.NONE, False, False),
+            "reports": (AccessLevel.NONE, False, False),
             "settings": (AccessLevel.NONE, False, False),
         },
         "payroll_officer": {
@@ -215,10 +215,10 @@ def seed_database(db: Session):
         },
         "employee": {
             "dashboard": (AccessLevel.SELF, False, False),
-            "directory": (AccessLevel.SELF, False, False),
+            "directory": (AccessLevel.NONE, False, False),
             "attendance": (AccessLevel.SELF, True, False),
             "leave": (AccessLevel.SELF, True, False),
-            "payroll": (AccessLevel.SELF, False, False),
+            "payroll": (AccessLevel.NONE, False, False),
             "reports": (AccessLevel.NONE, False, False),
             "settings": (AccessLevel.NONE, False, False),
         },

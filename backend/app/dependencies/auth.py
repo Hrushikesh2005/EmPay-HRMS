@@ -67,12 +67,22 @@ def require_roles(*roles: UserRole):
 def require_permission(module: str, action: str = "view", required_level: str = "self"):
     from app.models.permission import Permission, AccessLevel
 
+    blocked_modules = {
+        UserRole.employee: {"directory", "payroll", "reports"},
+        UserRole.hr_officer: {"payroll", "reports"},
+    }
+
     def _checker(
         current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
     ) -> User:
         # Admins have full access to everything
         if current_user.role == UserRole.admin:
             return current_user
+
+        if module in blocked_modules.get(current_user.role, set()):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied"
+            )
 
         perm = (
             db.query(Permission)

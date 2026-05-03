@@ -59,6 +59,10 @@ def require_permission(
 	module: str, action: str = "view", required_level: str = "self"
 ):
 	level_map = {"none": 0, "self": 1, "all": 2}
+	blocked_modules = {
+		"employee": {"directory", "payroll", "reports"},
+		"hr_officer": {"payroll", "reports"},
+	}
 
 	def _checker(
 		current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
@@ -69,6 +73,9 @@ def require_permission(
 		# Admins have full access to everything
 		if role_str == "admin":
 			return current_user
+
+		if module in blocked_modules.get(role_str, set()):
+			raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
 
 		perm = db.execute(
 			text(
