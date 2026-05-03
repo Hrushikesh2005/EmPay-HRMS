@@ -22,6 +22,7 @@ import { Button } from "../components/ui/Button";
 import { DataTable } from "../components/ui/DataTable";
 import api from "../api/axios.js";
 import useAuth from "../hooks/useAuth.js";
+import { useDebounce } from "../hooks/useDebounce.js";
 
 function StatusPill({ active }) {
   return (
@@ -44,6 +45,7 @@ export default function Settings() {
   // User Management State
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearch = useDebounce(searchTerm, 300);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [savingUserId, setSavingUserId] = useState(null);
 
@@ -146,8 +148,8 @@ export default function Settings() {
 
   const filteredUsers = users.filter(
     (u) =>
-      u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase())
+      u.full_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      u.email.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
   const userColumns = [

@@ -7,8 +7,10 @@ import { PageHeader } from "../components/ui/PageHeader";
 import { EmployeeProfileView } from "../components/ui/EmployeeProfileView";
 import { fetchEmployees } from "../services/employees";
 import useAuth from "../hooks/useAuth.js";
-import useRealtime from "../hooks/useRealtime.js";
 
+import useRealtime from "../hooks/useRealtime.js";
+import { useDebounce } from "../hooks/useDebounce.js";
+import { useSearchParams } from "react-router-dom";
 function AttendanceMarker({ status }) {
   const normalized = (status || "absent").toLowerCase();
 
@@ -64,12 +66,22 @@ export default function Directory() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const canEdit = role === "admin" || role === "hr_officer";
+  const [urlParams] = useSearchParams();
+  const urlSearch = urlParams.get("search") || "";
 
   const [searchTerm, setSearchTerm] = useState("");
   const [employees, setEmployees] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const debouncedSearch = useDebounce(searchTerm, 300);
+
+  // Initialize search term from URL parameter
+  useEffect(() => {
+    if (urlSearch) {
+      setSearchTerm(urlSearch);
+    }
+  }, [urlSearch]);
 
   useEffect(() => {
     let isMounted = true;
@@ -117,16 +129,14 @@ export default function Directory() {
     };
   }, []);
 
-
   const filteredEmployees = useMemo(() => {
-    const q = searchTerm.toLowerCase();
+    const q = debouncedSearch.toLowerCase();
     return employees.filter((emp) =>
       [emp.user?.full_name, emp.user?.email, emp.department, emp.designation]
         .filter(Boolean)
         .some((v) => v.toLowerCase().includes(q)),
     );
-  }, [employees, searchTerm]);
-
+  }, [employees, debouncedSearch]);
   // ── When an employee is selected, show their full-page profile ──
   if (selectedEmployee) {
     return (

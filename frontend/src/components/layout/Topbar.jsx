@@ -1,14 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Bell,
-  Search,
-  Menu,
-  LogOut,
-  Loader2,
-  CheckCircle2,
-  LogIn,
-  Plane,
-} from "lucide-react";
+import { Bell, Menu, LogOut, Loader2, CheckCircle2, LogIn, Plane } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import useAuth from "../../hooks/useAuth.js";
@@ -30,6 +21,8 @@ export default function Topbar() {
     .map((chunk) => chunk[0])
     .join("")
     .toUpperCase();
+
+  
 
   const handleLogout = () => {
     logout();
@@ -117,9 +110,12 @@ export default function Topbar() {
   const showDot = !isAdminRole && !attendanceLoading;
 
   const dotStyle = useMemo(() => {
-    if (actionLoading) return { color: "bg-amber-400 animate-pulse", label: "Working…" };
-    if (isCheckedOut) return { color: "bg-slate-400", label: "Checked out for today" };
-    if (isCheckedIn) return { color: "bg-emerald-500", label: "Checked in — click to manage" };
+    if (actionLoading)
+      return { color: "bg-amber-400 animate-pulse", label: "Working…" };
+    if (isCheckedOut)
+      return { color: "bg-slate-400", label: "Checked out for today" };
+    if (isCheckedIn)
+      return { color: "bg-emerald-500", label: "Checked in — click to manage" };
     return { color: "bg-red-500", label: "Not checked in — click to check in" };
   }, [isCheckedIn, isCheckedOut, actionLoading]);
 
@@ -130,14 +126,7 @@ export default function Topbar() {
         <button className="md:hidden p-2 -ml-2 mr-2 text-slate-500 hover:bg-slate-100 rounded-md">
           <Menu className="w-5 h-5" />
         </button>
-        <div className="hidden sm:flex items-center bg-slate-100 px-3 py-1.5 rounded-lg border border-transparent focus-within:bg-white focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 transition-all max-w-sm w-full">
-          <Search className="w-4 h-4 text-slate-400 mr-2" />
-          <input
-            type="text"
-            placeholder="Search employees..."
-            className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-400"
-          />
-        </div>
+        {/* search removed per request */}
       </div>
 
       {/* Right */}
@@ -153,8 +142,12 @@ export default function Topbar() {
         <div className="flex items-center gap-3">
           {/* Name / role */}
           <div className="hidden sm:flex flex-col items-end">
-            <span className="text-sm font-medium text-slate-900 leading-none">{displayName}</span>
-            <span className="text-xs text-slate-500 mt-1 capitalize">{roleLabel}</span>
+            <span className="text-sm font-medium text-slate-900 leading-none">
+              {displayName}
+            </span>
+            <span className="text-xs text-slate-500 mt-1 capitalize">
+              {roleLabel}
+            </span>
           </div>
 
           {/* Avatar + dot */}
@@ -188,18 +181,20 @@ export default function Topbar() {
                       isCheckedOut
                         ? "bg-slate-400"
                         : isCheckedIn
-                        ? "bg-emerald-500"
-                        : "bg-red-500"
+                          ? "bg-emerald-500"
+                          : "bg-red-500"
                     }`}
                   />
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">Attendance</p>
+                    <p className="text-sm font-semibold text-slate-800">
+                      Attendance
+                    </p>
                     <p className="text-xs text-slate-500">
                       {isCheckedOut
                         ? "Shift complete for today."
                         : isCheckedIn
-                        ? "You are currently checked in."
-                        : "You haven't checked in yet."}
+                          ? "You are currently checked in."
+                          : "You haven't checked in yet."}
                     </p>
                   </div>
                 </div>
